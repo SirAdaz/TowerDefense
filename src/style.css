@@ -185,13 +185,13 @@ ul {
 
 .panel {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .card {
   display: grid;
-  gap: 12px;
-  padding: 16px;
+  gap: 10px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
   background: var(--surface);
 }
@@ -293,7 +293,7 @@ progress::-moz-progress-bar {
 
 .gauges {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 14px;
   list-style: none;
 }

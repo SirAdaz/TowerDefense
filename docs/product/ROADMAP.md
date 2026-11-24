@@ -2,13 +2,13 @@
 
 ## V1 jouable
 
-- Carte 16 × 10, un chemin fixe, tourelles sur l'herbe.
+- Carte 16 × 10, un chemin fixe, tourelles sur les cases libres.
 - Une tourelle, 3 jauges (dégâts, portée, cadence) sur 5 niveaux, revente.
 - Ennemis : normal, rapide, costaud, boss toutes les 10 vagues.
 - Vagues sans fin : 20 vies, départ seul après 10 s ou au clic avec bonus.
 - Score : vague atteinte + record (`localStorage`).
 - Confort : pause automatique hors de l'onglet, sauvegarde de la partie, vitesse ×2, pause.
-- Style « Pixel douillet », police Press Start 2P servie avec le jeu (hors ligne).
+- Style « plan technique », police IBM Plex Mono servie avec le jeu (hors ligne).
 - Aucun son.
 
 Détail des règles et chiffres : [SPECS.md](SPECS.md).
