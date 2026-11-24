@@ -28,7 +28,7 @@ Toute erreur du stockage (navigation privée, quota) est absorbée : le jeu marc
 
 ## Rendu
 
-Canvas dimensionné sur sa taille affichée × `devicePixelRatio`. Le dessin se fait dans un repère où une case mesure 56 unités (celui de la maquette), mis à l'échelle par `setTransform` : la carte reste nette de 1024 à 1920 px.
+Canvas dimensionné sur sa taille affichée × `devicePixelRatio`. Le dessin se fait dans un repère où une case mesure 56 unités (unité fixe, indépendante de la taille d'affichage), mis à l'échelle par `setTransform` : la carte reste nette de 1024 à 1920 px.
 
 ## Exécution
 

@@ -40,7 +40,7 @@ Vie à la vague V = vie de base × 1,15^(V−1), arrondie.
 | Boss    | carré noir couronné  | 500         | 0,55              | 100 $ |
 
 - Si un ennemi est tué, alors sa prime est ajoutée à l'argent.
-- Si un ennemi atteint la sortie, alors il disparaît et retire 1 vie (boss compris).
+- Si un ennemi atteint la sortie, alors il disparaît et retire 1 vie ; un boss en retire 5 (jamais en dessous de 0).
 - Exemples de vie d'un normal : vague 1 = 20, vague 10 = 70, vague 15 = 141, vague 20 = 285, vague 25 = 573. Boss : vague 10 = 1 759, vague 20 = 7 116.
 
 ## Vagues
