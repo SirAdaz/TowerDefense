@@ -1,0 +1,76 @@
+name: CI
+
+# Une exécution par PR (pull_request) + une sur main après le merge (push).
+# Pas de déclencheur sur les branches de feature : pas de double passage.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: quality (lint · types · tests · build)
+    runs-on: ubuntu-latest # runner GitHub : dépôt public, jamais de runner auto-hébergé
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (seuils de couverture sur src/game)
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+  security:
+    name: security (deps · secrets · SAST)
+    runs-on: ubuntu-latest # runner GitHub : dépôt public, jamais de runner auto-hébergé
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read # gitleaks-action lit les commits de la PR
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # gitleaks scanne l'historique
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: npm audit (dépendances de prod, high+)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Secrets scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: SAST (Semgrep CE)
+        run: |
+          pipx run semgrep scan --error --metrics=off \
+            --config p/javascript --config p/typescript --config p/secrets \
+            --exclude node_modules --exclude dist

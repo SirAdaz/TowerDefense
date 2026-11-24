@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly # une PR groupée par mois ; les correctifs de sécurité restent immédiats
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 5
+    # Les majeures se font exprès (branche dédiée + tests), pas par le bot.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

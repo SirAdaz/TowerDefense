@@ -1,0 +1,27 @@
+# Environnement de développement : tout tourne dans le conteneur (rien d'installé sur la machine).
+# `docker compose up -d --build` puis http://localhost:5180 (Vite, rechargement à chaud).
+# Build de prod servi par nginx : `docker compose --profile prod up -d --build web` puis http://localhost:5181.
+# Pas de `restart:` : rien ne redémarre seul à l'ouverture de WSL.
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    image: tower-defense:dev
+    ports:
+      - "127.0.0.1:5180:5180"
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+
+  web:
+    build:
+      context: .
+      target: prod
+    image: tower-defense:prod
+    profiles: ["prod"]
+    ports:
+      - "127.0.0.1:5181:80"
+
+volumes:
+  app_node_modules:

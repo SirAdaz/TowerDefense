@@ -1,0 +1,15 @@
+:root {
+  --bg: #2b2b36;
+  --panel: #3b2f2a;
+  --fg: #f6eedd;
+  --muted: #c9bca0;
+  --accent: #e9a23b;
+  --accent-ink: #2b1d10;
+  font-family: "Press Start 2P", monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
