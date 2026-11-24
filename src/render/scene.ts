@@ -138,7 +138,7 @@ function drawCursor(ctx: Ctx, view: SceneView): void {
 }
 
 /**
- * Dessine toute la carte dans le repère de la maquette (1 case = 56 unités) ; l'appelant a déjà
+ * Dessine toute la carte dans le repère de dessin (1 case = 56 unités) ; l'appelant a déjà
  * appliqué l'échelle du canvas. Lit l'état sans jamais le modifier.
  */
 export function drawScene(ctx: Ctx, view: SceneView): void {

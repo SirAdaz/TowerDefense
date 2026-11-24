@@ -20,7 +20,7 @@ export function watchCanvasSize(canvas: HTMLCanvasElement, onResize: () => void)
   resize();
 }
 
-/** Dessine la scène à l'échelle du canvas (repère de la maquette : 1 case = 56 unités). */
+/** Dessine la scène à l'échelle du canvas (repère de dessin : 1 case = 56 unités). */
 export function drawBoard(canvas: HTMLCanvasElement, view: SceneView): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
