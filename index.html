@@ -8,7 +8,80 @@
     <link rel="icon" href="data:," />
   </head>
   <body>
-    <div id="app"></div>
+    <header class="hud">
+      <h1 class="visually-hidden">Tower defense</h1>
+      <dl class="stats">
+        <div class="stat"><dt>Vies</dt><dd id="lives">20</dd></div>
+        <div class="stat"><dt>Argent</dt><dd id="money">150 $</dd></div>
+        <div class="stat"><dt>Vague</dt><dd id="wave">0</dd></div>
+        <div class="stat"><dt>Record</dt><dd id="record">0</dd></div>
+      </dl>
+      <p id="countdown" class="countdown"></p>
+      <div class="controls">
+        <button id="next-wave" class="btn btn-accent" type="button">Lancer la vague 1</button>
+        <button id="speed" class="btn" type="button" aria-pressed="false">×2</button>
+        <button id="pause" class="btn" type="button" aria-pressed="false">Pause</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="board" aria-label="Carte">
+        <canvas
+          id="board"
+          tabindex="0"
+          role="application"
+          aria-roledescription="carte de jeu"
+          aria-label="Carte de 16 cases sur 10"
+          aria-describedby="board-help"
+        ></canvas>
+        <p id="board-help" class="visually-hidden">
+          Flèches pour choisir une case, Entrée pour poser une tourelle sur l'herbe ou sélectionner une tourelle, Échap pour
+          désélectionner.
+        </p>
+        <div id="overlay" class="overlay" hidden>
+          <div class="overlay-box" role="dialog" aria-labelledby="overlay-title" aria-describedby="overlay-text">
+            <h2 id="overlay-title"></h2>
+            <p id="overlay-text"></p>
+            <div class="overlay-actions">
+              <button id="overlay-primary" class="btn btn-accent" type="button"></button>
+              <button id="overlay-secondary" class="btn" type="button"></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel" aria-labelledby="panel-title">
+        <h2 id="panel-title">Tourelle</h2>
+        <div id="panel-empty" class="panel-body">
+          <p>Clique sur l'herbe pour poser une tourelle.</p>
+          <p class="muted">Prix : 50 $</p>
+          <p class="muted">Clavier : flèches puis Entrée sur la carte.</p>
+        </div>
+        <div id="panel-tower" class="panel-body" hidden>
+          <p id="tower-kills" class="muted"></p>
+          <div class="gauges">
+            <div class="gauge" data-gauge="damage">
+              <span class="gauge-name" id="gauge-damage">Dégâts</span>
+              <span class="pips" role="img"></span>
+              <button class="btn btn-accent upgrade" type="button"></button>
+            </div>
+            <div class="gauge" data-gauge="range">
+              <span class="gauge-name" id="gauge-range">Portée</span>
+              <span class="pips" role="img"></span>
+              <button class="btn btn-accent upgrade" type="button"></button>
+            </div>
+            <div class="gauge" data-gauge="rate">
+              <span class="gauge-name" id="gauge-rate">Cadence</span>
+              <span class="pips" role="img"></span>
+              <button class="btn btn-accent upgrade" type="button"></button>
+            </div>
+          </div>
+          <button id="sell" class="btn btn-wide" type="button"></button>
+        </div>
+      </aside>
+    </main>
+
+    <p id="announcer" class="visually-hidden" aria-live="polite"></p>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

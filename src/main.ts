@@ -1,8 +1,21 @@
-// Sous-ensemble latin seul (le français y est entier), servi avec le jeu : aucun appel à Google Fonts.
-import "@fontsource/press-start-2p/latin-400.css";
+import "@fontsource/press-start-2p/400.css";
 import "./style.css";
+import { GameApp } from "./ui/app.ts";
 
-const root = document.querySelector<HTMLDivElement>("#app");
-if (root) {
-  root.textContent = "Tower defense";
+/** Stockage du navigateur ; peut être refusé (navigation privée stricte) : le jeu marche alors sans sauvegarde. */
+function browserStore(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }
+
+const memory = new Map<string, string>();
+const fallbackStore = {
+  getItem: (key: string) => memory.get(key) ?? null,
+  setItem: (key: string, value: string) => void memory.set(key, value),
+  removeItem: (key: string) => void memory.delete(key),
+};
+
+new GameApp(browserStore() ?? fallbackStore).start();

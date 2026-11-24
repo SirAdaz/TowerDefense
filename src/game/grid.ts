@@ -15,7 +15,7 @@ export const ROWS = 10;
 
 /**
  * Chemin fixe de la carte, case par case, de l'entrée (gauche) à la sortie (droite).
- * Repris de la maquette « Pixel douillet » : 36 cases, 35 segments.
+ * 36 cases, 35 segments.
  */
 const PATH_STEPS: ReadonlyArray<readonly [number, number]> = [
   [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [5, 2], [5, 3], [5, 4], [4, 4], [3, 4], [2, 4],

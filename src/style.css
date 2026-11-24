@@ -1,3 +1,4 @@
+/* Direction « Pixel douillet » : bandeau et panneau brun foncé, bordure et boutons ambre, police pixel. */
 :root {
   --bg: #2b2b36;
   --panel: #3b2f2a;
@@ -5,11 +6,281 @@
   --muted: #c9bca0;
   --accent: #e9a23b;
   --accent-ink: #2b1d10;
-  font-family: "Press Start 2P", monospace;
+  --btn: #5a4a3a;
+  --btn-shadow: #1d1712;
+  --pip-off: #a8987a;
+  --focus: #fff0b4;
+  --hud-height: 72px;
+  color-scheme: dark;
+  font-family: "Press Start 2P", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
   background: var(--bg);
   color: var(--fg);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+p {
+  margin: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  min-height: var(--hud-height);
+  padding: 12px 24px;
+  background: var(--panel);
+}
+
+.stats {
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.stat {
+  display: flex;
+  gap: 10px;
+}
+
+.stat dt {
+  color: var(--muted);
+}
+
+.stat dd {
+  margin: 0;
+  min-width: 3ch;
+}
+
+.countdown {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  background: var(--btn);
+  box-shadow: 3px 4px 0 var(--btn-shadow);
+  color: var(--fg);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: inset 3px 4px 0 rgb(0 0 0 / 25%);
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 2px 0 var(--btn-shadow);
+}
+
+.btn:disabled {
+  background: var(--btn);
+  color: var(--muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible,
+canvas:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.btn-wide {
+  width: 100%;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: start;
+  padding: 24px;
+}
+
+.board {
+  position: relative;
+  justify-self: center;
+  width: min(100%, calc((100vh - var(--hud-height) - 48px) * 1.6));
+  min-width: 0;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  image-rendering: pixelated;
+  cursor: pointer;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(29 23 18 / 72%);
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+.overlay-box {
+  display: grid;
+  gap: 18px;
+  max-width: 90%;
+  padding: 28px 32px;
+  border: 4px solid var(--accent);
+  background: var(--panel);
+  text-align: center;
+}
+
+.overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.overlay-actions .btn[hidden] {
+  display: none;
+}
+
+.panel {
+  display: grid;
+  gap: 18px;
+  padding: 20px 18px;
+  border: 4px solid var(--accent);
+  background: var(--panel);
+}
+
+.panel-body {
+  display: grid;
+  gap: 14px;
+}
+
+.panel-body[hidden] {
+  display: none;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.gauges {
+  display: grid;
+  gap: 22px;
+  margin: 8px 0 12px;
+}
+
+.gauge {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "name button" "pips button";
+  align-items: center;
+  gap: 10px 8px;
+}
+
+.gauge-name {
+  grid-area: name;
+}
+
+.pips {
+  grid-area: pips;
+  display: flex;
+  gap: 6px;
+}
+
+.pip {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--pip-off);
+}
+
+.pip.is-on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.upgrade {
+  grid-area: button;
+  min-width: 84px;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 236px;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .hud {
+    padding: 10px 16px;
+  }
+
+  .stats {
+    gap: 18px;
+    font-size: 12px;
+  }
+
+  .panel {
+    padding: 16px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled) {
+    transform: none;
+  }
 }
