@@ -1,29 +1,42 @@
-/** Élément obligatoire de index.html : une absence est un bug de balisage, on échoue tout de suite. */
-export function byId<T extends HTMLElement>(id: string): T {
+/** Élément du gabarit `index.html`, typé. Une erreur ici signale un gabarit et un code désaccordés. */
+export function requireElement<ElementType extends HTMLElement>(
+  id: string,
+  elementClass: new () => ElementType,
+): ElementType {
   const element = document.getElementById(id);
-  if (!element) throw new Error(`Missing #${id} in index.html`);
-  return element as T;
-}
-
-export function query<T extends Element>(root: ParentNode, selector: string): T {
-  const element = root.querySelector<T>(selector);
-  if (!element) throw new Error(`Missing ${selector} in index.html`);
+  if (!(element instanceof elementClass)) {
+    throw new Error(`Missing element #${id}`);
+  }
   return element;
 }
 
-/** N'écrit que si le texte change : l'interface est mise à jour à chaque image sans toucher au DOM pour rien. */
+/** Écrit un texte seulement s'il change : la page n'est pas retouchée 60 fois par seconde. */
 export function setText(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) element.textContent = text;
+  if (element.textContent !== text) {
+    element.textContent = text;
+  }
 }
 
-export function setAttr(element: HTMLElement, name: string, value: string): void {
-  if (element.getAttribute(name) !== value) element.setAttribute(name, value);
+/** Pose ou retire un attribut seulement s'il change. */
+export function setAttribute(element: HTMLElement, name: string, value: string): void {
+  if (element.getAttribute(name) !== value) {
+    element.setAttribute(name, value);
+  }
 }
 
-export function setDisabled(button: HTMLButtonElement, isDisabled: boolean): void {
-  if (button.disabled !== isDisabled) button.disabled = isDisabled;
+/**
+ * Bouton indisponible mais toujours atteignable au clavier : `aria-disabled` plutôt que `disabled`,
+ * pour ne pas faire perdre le focus quand l'argent manque.
+ */
+export function setUnavailable(button: HTMLButtonElement, isUnavailable: boolean): void {
+  setAttribute(button, "aria-disabled", String(isUnavailable));
 }
 
-export function setHidden(element: HTMLElement, isHidden: boolean): void {
-  if (element.hidden !== isHidden) element.hidden = isHidden;
+export function isUnavailable(button: HTMLButtonElement): boolean {
+  return button.getAttribute("aria-disabled") === "true";
+}
+
+/** Montant affiché au joueur. */
+export function formatMoney(amount: number): string {
+  return `${amount} $`;
 }

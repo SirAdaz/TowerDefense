@@ -7,8 +7,13 @@ Tower defense simple dans le navigateur : un chemin, une seule tourelle à amél
 ```bash
 docker compose up -d --build      # Vite (rechargement à chaud) sur http://localhost:5180
 docker compose exec app npm run ci # lint, types, tests, build
+docker compose exec app npm run simulate # courbe de difficulté jouée par le joueur automatique
 docker compose down
 ```
+
+## Jouer
+
+Cliquez une case libre pour poser une tourelle, cliquez une tourelle pour monter ses jauges ou la vendre, puis lancez la vague. Au clavier : Tab jusqu'à la carte, flèches pour changer de case, Entrée pour poser ou sélectionner, P pour la pause, Échap pour désélectionner.
 
 Build de production servi par nginx : `docker compose --profile prod up -d --build web` puis http://localhost:5181.
 

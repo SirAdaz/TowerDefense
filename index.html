@@ -4,84 +4,110 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Tower defense simple : un chemin, une tourelle à améliorer, des vagues sans fin." />
+    <meta name="color-scheme" content="dark" />
     <title>Tower defense</title>
     <link rel="icon" href="data:," />
   </head>
   <body>
-    <header class="hud">
-      <h1 class="visually-hidden">Tower defense</h1>
-      <dl class="stats">
-        <div class="stat"><dt>Vies</dt><dd id="lives">20</dd></div>
-        <div class="stat"><dt>Argent</dt><dd id="money">150 $</dd></div>
-        <div class="stat"><dt>Vague</dt><dd id="wave">0</dd></div>
-        <div class="stat"><dt>Record</dt><dd id="record">0</dd></div>
-      </dl>
-      <p id="countdown" class="countdown"></p>
-      <div class="controls">
-        <button id="next-wave" class="btn btn-accent" type="button">Lancer la vague 1</button>
-        <button id="speed" class="btn" type="button" aria-pressed="false">×2</button>
-        <button id="pause" class="btn" type="button" aria-pressed="false">Pause</button>
-      </div>
-    </header>
-
-    <main class="layout">
-      <section class="board" aria-label="Carte">
-        <canvas
-          id="board"
-          tabindex="0"
-          role="application"
-          aria-roledescription="carte de jeu"
-          aria-label="Carte de 16 cases sur 10"
-          aria-describedby="board-help"
-        ></canvas>
-        <p id="board-help" class="visually-hidden">
-          Flèches pour choisir une case, Entrée pour poser une tourelle sur l'herbe ou sélectionner une tourelle, Échap pour
-          désélectionner.
-        </p>
-        <div id="overlay" class="overlay" hidden>
-          <div class="overlay-box" role="dialog" aria-labelledby="overlay-title" aria-describedby="overlay-text">
-            <h2 id="overlay-title"></h2>
-            <p id="overlay-text"></p>
-            <div class="overlay-actions">
-              <button id="overlay-primary" class="btn btn-accent" type="button"></button>
-              <button id="overlay-secondary" class="btn" type="button"></button>
-            </div>
+    <div class="app">
+      <header class="topbar">
+        <h1 class="brand">Tower defense</h1>
+        <dl class="stats">
+          <div class="stat">
+            <dt>Vague</dt>
+            <dd id="stat-wave">0</dd>
           </div>
-        </div>
-      </section>
-
-      <aside class="panel" aria-labelledby="panel-title">
-        <h2 id="panel-title">Tourelle</h2>
-        <div id="panel-empty" class="panel-body">
-          <p>Clique sur l'herbe pour poser une tourelle.</p>
-          <p class="muted">Prix : 50 $</p>
-          <p class="muted">Clavier : flèches puis Entrée sur la carte.</p>
-        </div>
-        <div id="panel-tower" class="panel-body" hidden>
-          <p id="tower-kills" class="muted"></p>
-          <div class="gauges">
-            <div class="gauge" data-gauge="damage">
-              <span class="gauge-name" id="gauge-damage">Dégâts</span>
-              <span class="pips" role="img"></span>
-              <button class="btn btn-accent upgrade" type="button"></button>
-            </div>
-            <div class="gauge" data-gauge="range">
-              <span class="gauge-name" id="gauge-range">Portée</span>
-              <span class="pips" role="img"></span>
-              <button class="btn btn-accent upgrade" type="button"></button>
-            </div>
-            <div class="gauge" data-gauge="rate">
-              <span class="gauge-name" id="gauge-rate">Cadence</span>
-              <span class="pips" role="img"></span>
-              <button class="btn btn-accent upgrade" type="button"></button>
-            </div>
+          <div class="stat">
+            <dt>Vies</dt>
+            <dd id="stat-lives">20</dd>
           </div>
-          <button id="sell" class="btn btn-wide" type="button"></button>
-        </div>
-      </aside>
-    </main>
+          <div class="stat">
+            <dt>Argent</dt>
+            <dd id="stat-money">150 $</dd>
+          </div>
+          <div class="stat">
+            <dt>Record</dt>
+            <dd id="stat-record">0</dd>
+          </div>
+        </dl>
+      </header>
 
-    <p id="announcer" class="visually-hidden" aria-live="polite"></p>
+      <main class="layout">
+        <section class="board-area" aria-labelledby="board-title">
+          <h2 id="board-title" class="sr-only">Carte</h2>
+          <div class="board">
+            <canvas id="board-canvas" aria-hidden="true"></canvas>
+            <div
+              id="board-cells"
+              class="cells"
+              role="group"
+              aria-label="Cases de la carte. Flèches pour se déplacer, Entrée pour poser ou sélectionner une tourelle."
+            ></div>
+            <p id="board-banner" class="banner" hidden>En pause</p>
+          </div>
+        </section>
+
+        <aside class="panel" aria-label="Commandes">
+          <section class="card" aria-labelledby="waves-title">
+            <h2 id="waves-title">Vagues</h2>
+            <p id="wave-status" class="status"></p>
+            <progress id="wave-countdown" max="10" value="0" aria-label="Temps avant la vague suivante" hidden></progress>
+            <button id="next-wave" type="button" class="btn btn-primary">Lancer la vague 1</button>
+            <div class="btn-row">
+              <button id="pause" type="button" class="btn" aria-keyshortcuts="P">Pause</button>
+              <button id="speed" type="button" class="btn" aria-pressed="false">Vitesse ×2</button>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="tower-title">
+            <h2 id="tower-title">Tourelle</h2>
+            <p id="tower-hint" class="status">
+              Cliquez une case libre pour poser une tourelle (50 $). Cliquez une tourelle pour l'améliorer ou la vendre.
+            </p>
+            <div id="tower-details" hidden>
+              <ul class="gauges">
+                <li class="gauge" data-gauge="damage">
+                  <div class="gauge-head">
+                    <span class="gauge-name">Dégâts</span>
+                    <span id="gauge-damage-value" class="gauge-value"></span>
+                  </div>
+                  <div id="gauge-damage-pips" class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+                  <button id="upgrade-damage" type="button" class="btn"></button>
+                </li>
+                <li class="gauge" data-gauge="range">
+                  <div class="gauge-head">
+                    <span class="gauge-name">Portée</span>
+                    <span id="gauge-range-value" class="gauge-value"></span>
+                  </div>
+                  <div id="gauge-range-pips" class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+                  <button id="upgrade-range" type="button" class="btn"></button>
+                </li>
+                <li class="gauge" data-gauge="rate">
+                  <div class="gauge-head">
+                    <span class="gauge-name">Cadence</span>
+                    <span id="gauge-rate-value" class="gauge-value"></span>
+                  </div>
+                  <div id="gauge-rate-pips" class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+                  <button id="upgrade-rate" type="button" class="btn"></button>
+                </li>
+              </ul>
+              <button id="sell" type="button" class="btn btn-danger"></button>
+            </div>
+          </section>
+
+          <button id="new-game" type="button" class="btn btn-quiet">Nouvelle partie</button>
+        </aside>
+      </main>
+
+      <p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+
+      <dialog id="game-over" class="dialog" aria-labelledby="game-over-title">
+        <h2 id="game-over-title">Partie terminée</h2>
+        <p id="game-over-wave" class="dialog-score"></p>
+        <p id="game-over-record" class="status"></p>
+        <button id="game-over-restart" type="button" class="btn btn-primary">Nouvelle partie</button>
+      </dialog>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

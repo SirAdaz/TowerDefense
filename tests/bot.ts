@@ -1,100 +1,102 @@
-import { BALANCE } from "../src/game/balance.ts";
-import { STEP_SECONDS, createGame, step } from "../src/game/game.ts";
-import { COLS, PATH, ROWS, type Cell, isOnPath } from "../src/game/grid.ts";
+import { GAUGES, GAUGE_VALUES, TOWER_COST, type Gauge } from "../src/game/balance.ts";
+import { createGame, startNextWave, step } from "../src/game/engine.ts";
+import { COLS, PATH, ROWS, cellCenter, isOnPath, type Cell } from "../src/game/grid.ts";
 import { buildTower, isBuildable, upgradeCost, upgradeTower } from "../src/game/towers.ts";
-import type { GameState, Gauge } from "../src/game/types.ts";
+import type { GameState, Tower } from "../src/game/types.ts";
 
-/** Joueur automatique pour mesurer l'équilibrage (tests et scripts/simulate.ts), jamais chargé par le jeu. */
-export interface BotOptions {
-  /** Nombre maximum de tourelles posées. */
+/** Profil de joueur automatique : combien de tourelles il pose, et s'il les améliore. */
+export interface BotProfile {
   readonly maxTowers: number;
-  /** Vrai : améliore les jauges ; faux : ne fait que poser. */
-  readonly canUpgrade: boolean;
-  /** Arrêt de la simulation, pour ne pas tourner sans fin. */
-  readonly maxWave: number;
+  readonly shouldUpgrade: boolean;
+  /** Vrai : lance chaque vague dès que possible (bonus). Faux : laisse le compte à rebours finir. */
+  readonly shouldRush: boolean;
 }
 
 export interface BotResult {
-  /** Vague pendant laquelle la partie est perdue (ou maxWave si elle tient jusque-là). */
+  /** Vague atteinte à la défaite (ou à l'arrêt de la simulation). */
   readonly waveReached: number;
-  readonly livesLostByWave: readonly number[];
+  /** Première vague où une vie a été perdue, ou `null` si aucune. */
+  readonly firstLossWave: number | null;
+  readonly isDefeated: boolean;
 }
 
-function pathCellsNear(cell: Cell, radius: number): number {
-  return PATH.filter((pathCell) => Math.hypot(pathCell.col - cell.col, pathCell.row - cell.row) <= radius).length;
+/** Le bot joue deux fois par seconde de jeu : assez pour dépenser, sans ralentir les tests. */
+const STEPS_BETWEEN_DECISIONS = 30;
+
+function pathCoverage(cell: Cell): number {
+  const center = cellCenter(cell);
+  const baseRange = GAUGE_VALUES.range[0] ?? 0;
+  return PATH.filter((pathCell) => {
+    const target = cellCenter(pathCell);
+    return Math.hypot(target.x - center.x, target.y - center.y) <= baseRange;
+  }).length;
 }
 
-/** Cases libres triées de la plus utile (le plus de chemin à portée) à la moins utile. */
+/** Cases libres, de celle qui couvre le plus de chemin à celle qui en couvre le moins. */
 function rankedCells(): Cell[] {
   const cells: Cell[] = [];
-  for (let col = 0; col < COLS; col++) {
-    for (let row = 0; row < ROWS; row++) if (!isOnPath({ col, row })) cells.push({ col, row });
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      if (!isOnPath({ col, row })) {
+        cells.push({ col, row });
+      }
+    }
   }
-  return cells.sort((a, b) => pathCellsNear(b, 2) - pathCellsNear(a, 2));
+  return cells.sort((a, b) => pathCoverage(b) - pathCoverage(a));
 }
 
 const RANKED_CELLS = rankedCells();
-const UPGRADE_ORDER: readonly Gauge[] = ["damage", "rate", "range"];
 
-function cheapestUpgrade(state: GameState): { towerId: number; gauge: Gauge; cost: number } | null {
-  let best: { towerId: number; gauge: Gauge; cost: number } | null = null;
-  for (const gauge of UPGRADE_ORDER) {
-    for (const tower of state.towers) {
+function cheapestUpgrade(state: GameState): { tower: Tower; gauge: Gauge; cost: number } | null {
+  let best: { tower: Tower; gauge: Gauge; cost: number } | null = null;
+  for (const tower of state.towers) {
+    for (const gauge of GAUGES) {
       const cost = upgradeCost(tower.levels[gauge]);
-      if (cost !== null && (!best || cost < best.cost)) best = { towerId: tower.id, gauge, cost };
+      if (cost !== null && (best === null || cost < best.cost)) {
+        best = { tower, gauge, cost };
+      }
     }
   }
   return best;
 }
 
-function tryBuild(state: GameState, options: BotOptions): boolean {
-  if (state.towers.length >= options.maxTowers) return false;
-  const cell = RANKED_CELLS.find((candidate) => isBuildable(state, candidate));
-  return cell ? buildTower(state, cell) !== null : false;
+function spendOnce(state: GameState, profile: BotProfile): boolean {
+  if (state.towers.length < profile.maxTowers && state.money >= TOWER_COST) {
+    const cell = RANKED_CELLS.find((candidate) => isBuildable(state, candidate));
+    return cell !== undefined && buildTower(state, cell) !== null;
+  }
+  if (!profile.shouldUpgrade || state.towers.length < profile.maxTowers) {
+    return false;
+  }
+  const upgrade = cheapestUpgrade(state);
+  return upgrade !== null && upgradeTower(state, upgrade.tower.id, upgrade.gauge);
 }
 
-/**
- * Dépense l'argent comme un joueur moyen : garde au moins « 3 + vague / 2 » tourelles (dans la limite
- * de maxTowers), puis améliore la jauge la moins chère.
- */
-function spend(state: GameState, options: BotOptions): void {
-  for (let guard = 0; guard < 50; guard++) {
-    if (!spendOnce(state, options)) return;
+function decide(state: GameState, profile: BotProfile): void {
+  let hasSpent = true;
+  while (hasSpent) {
+    hasSpent = spendOnce(state, profile);
+  }
+  if (state.phase === "ready" || (profile.shouldRush && state.phase === "countdown")) {
+    startNextWave(state);
   }
 }
 
-/** Une dépense ; faux quand il n'y a plus rien d'utile à acheter maintenant (on attend d'avoir plus d'argent). */
-function needsMoreTowers(state: GameState, options: BotOptions): boolean {
-  return state.towers.length < options.maxTowers && state.towers.length < 3 + state.wave / 2;
-}
-
-function spendOnce(state: GameState, options: BotOptions): boolean {
-  const upgrade = options.canUpgrade ? cheapestUpgrade(state) : null;
-  const needsTower = needsMoreTowers(state, options);
-  const shouldBuild = !upgrade || needsTower || BALANCE.towerCost <= upgrade.cost;
-  if (shouldBuild && state.money >= BALANCE.towerCost && tryBuild(state, options)) return true;
-  if (needsTower || !upgrade || state.money < upgrade.cost) return false;
-  return upgradeTower(state, upgrade.towerId, upgrade.gauge);
-}
-
-/** Joue une partie complète : dépense à chaque seconde, laisse partir chaque vague au bout des 10 s. */
-export function playGame(options: BotOptions): BotResult {
+/** Joue une partie entière avec le profil donné, jusqu'à la défaite ou `maxWave`. */
+export function playBot(profile: BotProfile, maxWave = 60): BotResult {
   const state = createGame();
-  const livesLostByWave: number[] = [];
-  spend(state, options);
-  state.intermissionLeft = 0;
-  let livesAtWaveStart = state.lives;
-  let elapsedSteps = 0;
-  while (state.phase !== "gameOver" && state.wave <= options.maxWave) {
-    const waveBefore = state.wave;
-    step(state, STEP_SECONDS);
-    elapsedSteps += 1;
-    if (state.wave !== waveBefore) livesAtWaveStart = state.lives;
-    if (state.phase === "intermission" && state.intermissionLeft === BALANCE.intermissionSeconds) {
-      livesLostByWave[state.wave] = livesAtWaveStart - state.lives;
+  let firstLossWave: number | null = null;
+  let stepCount = 0;
+  while (state.phase !== "over" && state.wave <= maxWave) {
+    if (stepCount % STEPS_BETWEEN_DECISIONS === 0) {
+      decide(state, profile);
     }
-    if (elapsedSteps % 60 === 0) spend(state, options);
+    const livesBefore = state.lives;
+    step(state);
+    if (firstLossWave === null && state.lives < livesBefore) {
+      firstLossWave = state.wave;
+    }
+    stepCount += 1;
   }
-  return { waveReached: Math.min(state.wave, options.maxWave), livesLostByWave };
+  return { waveReached: state.wave, firstLossWave, isDefeated: state.phase === "over" };
 }
-

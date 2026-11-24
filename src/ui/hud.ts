@@ -1,63 +1,82 @@
-import { earlyCallBonus } from "../game/game.ts";
+import { earlyBonus } from "../game/engine.ts";
 import type { GameState } from "../game/types.ts";
-import { byId, setAttr, setDisabled, setText } from "./dom.ts";
+import { waveSize } from "../game/waves.ts";
+import { formatMoney, requireElement, setAttribute, setText, setUnavailable } from "./dom.ts";
 
-export interface HudElements {
-  readonly lives: HTMLElement;
-  readonly money: HTMLElement;
-  readonly wave: HTMLElement;
-  readonly record: HTMLElement;
-  readonly countdown: HTMLElement;
-  readonly nextWave: HTMLButtonElement;
-  readonly speed: HTMLButtonElement;
-  readonly pause: HTMLButtonElement;
-}
-
-export interface HudInfo {
+/** Ce que le bandeau et la carte « Vagues » affichent, en plus de l'état de la partie. */
+export interface HudView {
   readonly state: GameState;
   readonly record: number;
   readonly isPaused: boolean;
   readonly isFast: boolean;
 }
 
-export function getHud(): HudElements {
-  return {
-    lives: byId("lives"),
-    money: byId("money"),
-    wave: byId("wave"),
-    record: byId("record"),
-    countdown: byId("countdown"),
-    nextWave: byId("next-wave"),
-    speed: byId("speed"),
-    pause: byId("pause"),
-  };
+export interface Hud {
+  readonly nextWaveButton: HTMLButtonElement;
+  readonly pauseButton: HTMLButtonElement;
+  readonly speedButton: HTMLButtonElement;
+  refresh(view: HudView): void;
+}
+
+function waveStatus(state: GameState): string {
+  switch (state.phase) {
+    case "ready":
+      return "Posez vos tourelles, puis lancez la première vague.";
+    case "wave": {
+      const remaining = waveSize(state.wave) - state.spawnedCount + state.enemies.length;
+      return `Vague ${state.wave} en cours : ${remaining} ${remaining > 1 ? "ennemis restants" : "ennemi restant"}.`;
+    }
+    case "countdown":
+      return `Vague ${state.wave + 1} dans ${Math.ceil(state.countdown)} s. La lancer plus tôt rapporte un bonus.`;
+    case "over":
+      return `Partie terminée à la vague ${state.wave}.`;
+  }
 }
 
 function nextWaveLabel(state: GameState): string {
-  if (state.phase === "gameOver") return "Partie finie";
-  if (state.phase === "wave") return `Vague ${state.wave} en cours`;
-  if (state.wave === 0) return "Lancer la vague 1";
-  return `Vague ${state.wave + 1} (+${earlyCallBonus(state)} $)`;
+  if (state.phase === "ready") {
+    return "Lancer la vague 1";
+  }
+  if (state.phase === "countdown") {
+    return `Vague suivante · +${formatMoney(earlyBonus(state))}`;
+  }
+  return "Vague suivante";
 }
 
-function countdownLabel(state: GameState): string {
-  if (state.phase !== "intermission" || state.intermissionLeft === null) return "";
-  return `Prochaine vague dans ${Math.ceil(state.intermissionLeft)} s`;
-}
+/** Relie le bandeau (vague, vies, argent, record) et la carte « Vagues » aux éléments du gabarit. */
+export function createHud(): Hud {
+  const waveStat = requireElement("stat-wave", HTMLElement);
+  const livesStat = requireElement("stat-lives", HTMLElement);
+  const moneyStat = requireElement("stat-money", HTMLElement);
+  const recordStat = requireElement("stat-record", HTMLElement);
+  const status = requireElement("wave-status", HTMLParagraphElement);
+  const countdown = requireElement("wave-countdown", HTMLProgressElement);
+  const banner = requireElement("board-banner", HTMLParagraphElement);
+  const nextWaveButton = requireElement("next-wave", HTMLButtonElement);
+  const pauseButton = requireElement("pause", HTMLButtonElement);
+  const speedButton = requireElement("speed", HTMLButtonElement);
 
-/** Met à jour le bandeau (appelée à chaque image, n'écrit que ce qui change). */
-export function renderHud(hud: HudElements, info: HudInfo): void {
-  const { state } = info;
-  setText(hud.lives, String(state.lives));
-  setText(hud.money, `${state.money} $`);
-  setText(hud.wave, String(state.wave));
-  setText(hud.record, String(info.record));
-  setText(hud.countdown, countdownLabel(state));
-  setText(hud.nextWave, nextWaveLabel(state));
-  setDisabled(hud.nextWave, state.phase !== "intermission" || info.isPaused);
-  setAttr(hud.speed, "aria-pressed", String(info.isFast));
-  setAttr(hud.speed, "aria-label", info.isFast ? "Vitesse ×2 activée" : "Vitesse ×2");
-  setText(hud.pause, info.isPaused ? "Reprendre" : "Pause");
-  setAttr(hud.pause, "aria-pressed", String(info.isPaused));
-  setDisabled(hud.pause, state.phase === "gameOver");
+  return {
+    nextWaveButton,
+    pauseButton,
+    speedButton,
+    refresh({ state, record, isPaused, isFast }) {
+      setText(waveStat, String(state.wave));
+      setText(livesStat, String(state.lives));
+      setText(moneyStat, formatMoney(state.money));
+      setText(recordStat, String(record));
+      setText(status, waveStatus(state));
+      setText(nextWaveButton, nextWaveLabel(state));
+      setUnavailable(nextWaveButton, state.phase === "wave" || state.phase === "over");
+      const isCounting = state.phase === "countdown";
+      countdown.hidden = !isCounting;
+      if (isCounting) {
+        countdown.value = state.countdown;
+      }
+      setText(pauseButton, isPaused ? "Reprendre" : "Pause");
+      setUnavailable(pauseButton, state.phase === "over");
+      setAttribute(speedButton, "aria-pressed", String(isFast));
+      banner.hidden = !isPaused || state.phase === "over";
+    },
+  };
 }

@@ -1,223 +1,234 @@
-import { BALANCE } from "../game/balance.ts";
-import { STEP_SECONDS, createGame, startNextWave, step } from "../game/game.ts";
-import { type Cell, isOnPath } from "../game/grid.ts";
-import { type KeyValueStore, clearSave, readRecord, readSave, updateRecord, writeSave } from "../game/save.ts";
-import { buildTower, findTower, sellTower, towerAt, upgradeTower } from "../game/towers.ts";
-import type { GameState, Gauge } from "../game/types.ts";
-import type { CursorKind, SceneView } from "../render/scene.ts";
-import { drawBoard, watchCanvasSize } from "./board.ts";
-import { byId, setText } from "./dom.ts";
-import { type HudElements, getHud, renderHud } from "./hud.ts";
-import { bindInputs } from "./input.ts";
-import { Overlay } from "./overlay.ts";
-import { type PanelElements, getPanel, renderPanel } from "./panel.ts";
+import { GAUGES, type Gauge } from "../game/balance.ts";
+import { canStartWave, startNextWave } from "../game/engine.ts";
+import type { Cell } from "../game/grid.ts";
+import { updateRecord, type KeyValueStore } from "../game/save.ts";
+import { buildTower, sellTower, towerAt, towerById, upgradeTower } from "../game/towers.ts";
+import type { GameEvent } from "../game/types.ts";
+import { createRenderer, type Renderer } from "../render/renderer.ts";
+import { createBoard, type Board } from "./board.ts";
+import { isUnavailable, requireElement, setText } from "./dom.ts";
+import { createHud, type Hud } from "./hud.ts";
+import { advanceSession, openSession, persistSession, resetSession, type Session } from "./session.ts";
+import { createTowerPanel, type TowerPanel } from "./towerPanel.ts";
 
-/** Écart maximal pris en compte entre deux images : un onglet qui se réveille ne fait pas un bond. */
-const MAX_FRAME_SECONDS = 0.25;
+/** Tout ce dont les actions du joueur ont besoin : la session, le stockage et les morceaux d'interface. */
+interface App {
+  readonly session: Session;
+  readonly store: KeyValueStore;
+  readonly renderer: Renderer;
+  readonly hud: Hud;
+  readonly panel: TowerPanel;
+  readonly board: Board;
+  readonly announcer: HTMLElement;
+  readonly gameOverDialog: HTMLDialogElement;
+}
 
-/** Relie l'état du jeu, la boucle à pas fixe, le rendu et l'interface. */
-export class GameApp {
-  readonly canvas = byId<HTMLCanvasElement>("board");
-  private readonly announcer = byId<HTMLElement>("announcer");
-  private readonly hud: HudElements = getHud();
-  private readonly panel: PanelElements = getPanel();
-  private readonly overlay = new Overlay(this.canvas);
-  private readonly store: KeyValueStore;
-  private state: GameState = createGame();
-  private record = 0;
-  private isPaused = false;
-  private isFast = false;
-  private selectedTowerId: number | null = null;
-  private cursor: Cell | null = null;
-  private accumulator = 0;
-  private lastFrame: number | null = null;
+/** Une sauvegarde par seconde pendant que la partie tourne : fermer l'onglet ne coûte presque rien. */
+const AUTOSAVE_SECONDS = 1;
 
-  constructor(store: KeyValueStore) {
-    this.store = store;
+function announce(app: App, message: string): void {
+  setText(app.announcer, message);
+}
+
+function showGameOver(app: App): void {
+  const { session } = app;
+  const hasNewRecord = session.state.wave > session.recordAtStart;
+  setText(requireElement("game-over-wave", HTMLElement), `Vague ${session.state.wave}`);
+  const recordLine = hasNewRecord ? "Nouveau record !" : `Record : vague ${session.record}`;
+  setText(requireElement("game-over-record", HTMLElement), recordLine);
+  if (!app.gameOverDialog.open) {
+    app.gameOverDialog.showModal();
   }
+  announce(app, `Partie terminée à la vague ${session.state.wave}. ${recordLine}`);
+}
 
-  /** Charge la sauvegarde (reprise en pause) ou démarre une partie neuve, puis lance la boucle. */
-  start(): void {
-    this.record = readRecord(this.store);
-    const saved = readSave(this.store);
-    if (saved) {
-      this.state = saved;
-      this.isPaused = true;
-      this.showResume();
-    }
-    bindInputs(this);
-    watchCanvasSize(this.canvas, () => this.render());
-    requestAnimationFrame((now) => this.frame(now));
-  }
-
-  get isLocked(): boolean {
-    return this.isPaused || this.state.phase === "gameOver";
-  }
-
-  get currentCursor(): Cell | null {
-    return this.cursor;
-  }
-
-  private frame(now: number): void {
-    const elapsed = this.lastFrame === null ? 0 : Math.min((now - this.lastFrame) / 1000, MAX_FRAME_SECONDS);
-    this.lastFrame = now;
-    if (!this.isLocked) this.advance(elapsed * (this.isFast ? 2 : 1));
-    this.render();
-    requestAnimationFrame((next) => this.frame(next));
-  }
-
-  private advance(seconds: number): void {
-    this.accumulator += seconds;
-    while (this.accumulator >= STEP_SECONDS && !this.isLocked) {
-      this.accumulator -= STEP_SECONDS;
-      this.stepOnce();
+/** Réagit aux événements du jeu : record, annonces, sauvegarde aux moments clés, écran de fin. */
+function handleEvents(app: App, events: readonly GameEvent[]): void {
+  const { session, store } = app;
+  app.renderer.addEvents(events);
+  for (const event of events) {
+    if (event.type === "waveStarted") {
+      session.record = updateRecord(store, event.wave);
+      announce(app, `Vague ${event.wave} lancée.`);
+      persistSession(session, store);
+    } else if (event.type === "waveCleared") {
+      persistSession(session, store);
+    } else if (event.type === "gameOver") {
+      persistSession(session, store);
+      showGameOver(app);
     }
   }
+}
 
-  private stepOnce(): void {
-    const { phase, wave } = this.state;
-    step(this.state, STEP_SECONDS);
-    if (this.state.wave !== wave) this.onWaveStarted();
-    if (phase === "wave" && this.state.phase === "intermission") this.onWaveCleared();
-    if (this.state.phase === "gameOver" && phase !== "gameOver") this.onGameOver();
+function activateCell(app: App, cell: Cell): void {
+  const { session, store } = app;
+  const existing = towerAt(session.state, cell);
+  if (existing !== undefined) {
+    session.selectedTowerId = session.selectedTowerId === existing.id ? null : existing.id;
+    return;
   }
-
-  private onWaveStarted(): void {
-    this.record = updateRecord(this.store, this.state.wave);
-    this.announce(`Vague ${this.state.wave}`);
+  const built = buildTower(session.state, cell);
+  if (built === null) {
+    announce(app, "Pose impossible : pas assez d'argent.");
+    return;
   }
+  session.selectedTowerId = built.id;
+  announce(app, "Tourelle posée.");
+  persistSession(session, store);
+}
 
-  private onWaveCleared(): void {
-    writeSave(this.store, this.state);
-    this.announce(`Vague ${this.state.wave} terminée. Suivante dans ${BALANCE.intermissionSeconds} secondes.`);
+function upgradeSelected(app: App, gauge: Gauge): void {
+  const { session, store } = app;
+  if (session.selectedTowerId !== null && upgradeTower(session.state, session.selectedTowerId, gauge)) {
+    announce(app, "Amélioration faite.");
+    persistSession(session, store);
   }
+}
 
-  private onGameOver(): void {
-    writeSave(this.store, this.state);
-    this.selectedTowerId = null;
-    const text = `Vague atteinte : ${this.state.wave}. Record : ${this.record}.`;
-    this.announce(`Partie perdue. ${text}`);
-    this.overlay.show({ title: "Perdu !", text, primary: { label: "Nouvelle partie", onSelect: () => this.newGame() } });
+function sellSelected(app: App): void {
+  const { session, store } = app;
+  const tower = session.selectedTowerId === null ? undefined : towerById(session.state, session.selectedTowerId);
+  if (tower === undefined || sellTower(session.state, tower.id) === null) {
+    return;
   }
+  session.selectedTowerId = null;
+  announce(app, "Tourelle vendue.");
+  persistSession(session, store);
+  app.board.focusCell(tower);
+}
 
-  private showResume(): void {
-    this.overlay.show({
-      title: "Partie sauvegardée",
-      text: `Vague ${this.state.wave}, ${this.state.lives} vies, ${this.state.towers.length} tourelles.`,
-      primary: { label: "Reprendre", onSelect: () => this.resume() },
-      secondary: { label: "Nouvelle partie", onSelect: () => this.newGame() },
-    });
+function launchNextWave(app: App): void {
+  const { session } = app;
+  if (!canStartWave(session.state)) {
+    return;
   }
+  session.isPaused = false;
+  handleEvents(app, startNextWave(session.state));
+}
 
-  /** Pause manuelle ou automatique (onglet quitté) : rien n'avance tant qu'on ne clique pas « Reprendre ». */
-  pause(): void {
-    if (this.isPaused || this.state.phase === "gameOver") return;
-    this.isPaused = true;
-    this.overlay.show({
-      title: "Pause",
-      text: "La partie attend ton retour.",
-      primary: { label: "Reprendre", onSelect: () => this.resume() },
-      secondary: { label: "Nouvelle partie", onSelect: () => this.newGame() },
-    });
+function setPaused(app: App, isPaused: boolean): void {
+  const { session, store } = app;
+  if (session.state.phase === "over" || session.isPaused === isPaused) {
+    return;
   }
+  session.isPaused = isPaused;
+  announce(app, isPaused ? "Partie en pause." : "Partie reprise.");
+  persistSession(session, store);
+}
 
-  resume(): void {
-    this.isPaused = false;
-    this.lastFrame = null;
-    this.accumulator = 0;
-    this.overlay.hide();
+function startNewGame(app: App): void {
+  const { session, store } = app;
+  const isGameRunning = session.state.phase !== "over" && session.state.wave > 0;
+  if (isGameRunning && !window.confirm("Abandonner la partie en cours et recommencer ?")) {
+    return;
   }
+  resetSession(session);
+  app.renderer.reset();
+  app.gameOverDialog.close();
+  persistSession(session, store);
+  announce(app, "Nouvelle partie.");
+  app.hud.nextWaveButton.focus();
+}
 
-  togglePause(): void {
-    if (this.isPaused) this.resume();
-    else this.pause();
+/** Branche un bouton : un bouton marqué indisponible reste focalisable mais n'agit pas. */
+function onPress(button: HTMLButtonElement, action: () => void): void {
+  button.addEventListener("click", () => {
+    if (!isUnavailable(button)) {
+      action();
+    }
+  });
+}
+
+function bindControls(app: App): void {
+  const { session, store, hud, panel } = app;
+  onPress(hud.nextWaveButton, () => launchNextWave(app));
+  onPress(hud.pauseButton, () => setPaused(app, !session.isPaused));
+  onPress(hud.speedButton, () => {
+    session.isFast = !session.isFast;
+    persistSession(session, store);
+  });
+  for (const gauge of GAUGES) {
+    onPress(panel.upgradeButtons[gauge], () => upgradeSelected(app, gauge));
   }
+  onPress(panel.sellButton, () => sellSelected(app));
+  onPress(requireElement("new-game", HTMLButtonElement), () => startNewGame(app));
+  onPress(requireElement("game-over-restart", HTMLButtonElement), () => startNewGame(app));
 
-  toggleSpeed(): void {
-    this.isFast = !this.isFast;
-  }
-
-  callNextWave(): void {
-    if (!this.isLocked && startNextWave(this.state)) this.onWaveStarted();
-  }
-
-  newGame(): void {
-    clearSave(this.store);
-    this.state = createGame();
-    this.selectedTowerId = null;
-    this.resume();
-    this.announce("Nouvelle partie.");
-  }
-
-  setCursor(cell: Cell | null): void {
-    this.cursor = cell;
-  }
-
-  /** Clic ou Entrée sur une case : sélectionne la tourelle, en pose une sur l'herbe libre, sinon désélectionne. */
-  actOnCell(cell: Cell): void {
-    const existing = towerAt(this.state, cell);
-    if (existing) {
-      this.selectedTowerId = existing.id;
-      this.announce(`Tourelle sélectionnée, ${existing.kills} abattus.`);
+  document.addEventListener("keydown", (event) => {
+    const isTyping = event.ctrlKey || event.metaKey || event.altKey;
+    if (isTyping || app.gameOverDialog.open) {
       return;
     }
-    const built = this.isLocked ? null : buildTower(this.state, cell);
-    this.selectedTowerId = built?.id ?? null;
-    if (built) this.afterTowerChange("Tourelle posée.");
-  }
+    if (event.key === "Escape") {
+      session.selectedTowerId = null;
+    } else if (event.key.toLowerCase() === "p") {
+      setPaused(app, !session.isPaused);
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      const isPlaying = session.state.phase === "wave" || session.state.phase === "countdown";
+      setPaused(app, isPlaying || session.isPaused);
+      persistSession(session, store);
+    }
+  });
+  window.addEventListener("pagehide", () => persistSession(session, store));
+}
 
-  deselect(): void {
-    this.selectedTowerId = null;
-  }
+function refreshInterface(app: App): void {
+  const { session } = app;
+  const selected = session.selectedTowerId === null ? undefined : towerById(session.state, session.selectedTowerId);
+  app.hud.refresh(session);
+  app.panel.refresh(selected, session.state.money);
+  app.board.refresh(session.state);
+  app.renderer.draw(session);
+}
 
-  upgrade(gauge: Gauge): void {
-    if (this.selectedTowerId === null || this.isLocked) return;
-    if (upgradeTower(this.state, this.selectedTowerId, gauge)) this.afterTowerChange("Amélioration faite.");
-  }
+function runLoop(app: App): void {
+  const { session, store } = app;
+  let lastTime = performance.now();
+  let secondsSinceSave = 0;
+  const frame = (now: number): void => {
+    const elapsedSeconds = Math.max(now - lastTime, 0) / 1000;
+    lastTime = now;
+    const wasRunning = !session.isPaused && session.state.phase !== "over";
+    handleEvents(app, advanceSession(session, elapsedSeconds));
+    if (wasRunning) {
+      app.renderer.advance(elapsedSeconds);
+      secondsSinceSave += elapsedSeconds;
+    }
+    if (secondsSinceSave >= AUTOSAVE_SECONDS) {
+      secondsSinceSave = 0;
+      persistSession(session, store);
+    }
+    refreshInterface(app);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
 
-  sellSelected(): void {
-    if (this.selectedTowerId === null || this.isLocked) return;
-    if (!sellTower(this.state, this.selectedTowerId)) return;
-    this.selectedTowerId = null;
-    this.afterTowerChange("Tourelle vendue.");
-    this.canvas.focus();
+/** Démarre le jeu sur le gabarit de `index.html`, avec le stockage donné (`localStorage` en vrai). */
+export function startApp(store: KeyValueStore): void {
+  const session = openSession(store);
+  const boardHandlers = {
+    onActivate: (cell: Cell): void => activateCell(app, cell),
+    onHover: (cell: Cell | null): void => {
+      session.hoveredCell = cell;
+    },
+  };
+  const app: App = {
+    session,
+    store,
+    renderer: createRenderer(requireElement("board-canvas", HTMLCanvasElement)),
+    hud: createHud(),
+    panel: createTowerPanel(),
+    board: createBoard(requireElement("board-cells", HTMLElement), boardHandlers),
+    announcer: requireElement("announcer", HTMLElement),
+    gameOverDialog: requireElement("game-over", HTMLDialogElement),
+  };
+  bindControls(app);
+  if (session.isPaused) {
+    announce(app, "Partie reprise là où vous l'aviez laissée, en pause.");
   }
-
-  /** Entre deux vagues, chaque achat ou vente est sauvé ; pendant une vague, on garde la sauvegarde d'avant la vague. */
-  private afterTowerChange(message: string): void {
-    if (this.state.phase === "intermission") writeSave(this.store, this.state);
-    this.announce(`${message} Argent : ${this.state.money} $.`);
-  }
-
-  /** Description de la case visée, lue par les lecteurs d'écran quand on se déplace au clavier. */
-  describeCursor(): void {
-    if (!this.cursor) return;
-    const kindText: Record<CursorKind, string> = { build: "herbe libre", tower: "tourelle", blocked: "impossible de construire" };
-    const place = isOnPath(this.cursor) ? "chemin" : kindText[this.cursorKind()];
-    this.announce(`Case ${this.cursor.col + 1}, ${this.cursor.row + 1} : ${place}.`);
-  }
-
-  private cursorKind(): CursorKind {
-    if (!this.cursor) return "blocked";
-    if (towerAt(this.state, this.cursor)) return "tower";
-    const canBuild = !isOnPath(this.cursor) && this.state.money >= BALANCE.towerCost && !this.isLocked;
-    return canBuild ? "build" : "blocked";
-  }
-
-  private announce(text: string): void {
-    setText(this.announcer, text);
-  }
-
-  private render(): void {
-    const view: SceneView = {
-      state: this.state,
-      selectedTowerId: this.selectedTowerId,
-      cursor: this.cursor,
-      cursorKind: this.cursorKind(),
-    };
-    drawBoard(this.canvas, view);
-    renderHud(this.hud, { state: this.state, record: this.record, isPaused: this.isPaused, isFast: this.isFast });
-    const tower = this.selectedTowerId === null ? undefined : findTower(this.state, this.selectedTowerId);
-    renderPanel(this.panel, { tower, money: this.state.money, isLocked: this.isLocked });
-  }
+  runLoop(app);
 }

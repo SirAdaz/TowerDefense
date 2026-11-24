@@ -1,62 +1,59 @@
-/** Les trois jauges d'amélioration de l'unique tourelle. */
-export type Gauge = "damage" | "range" | "rate";
+import type { EnemyKind, Gauge } from "./balance.ts";
+import type { Point } from "./grid.ts";
 
-export const GAUGES: readonly Gauge[] = ["damage", "range", "rate"];
-
-export type EnemyKind = "normal" | "fast" | "tank" | "boss";
-
-/** intermission : entre deux vagues (ou avant la première) ; wave : ennemis en route ; gameOver : plus de vies. */
-export type Phase = "intermission" | "wave" | "gameOver";
+/**
+ * `ready` : avant la vague 1, on attend le clic. `wave` : des ennemis entrent ou sont sur la carte.
+ * `countdown` : entre deux vagues. `over` : plus de vies.
+ */
+export type Phase = "ready" | "wave" | "countdown" | "over";
 
 export type GaugeLevels = Record<Gauge, number>;
 
 export interface Tower {
-  readonly id: number;
-  readonly col: number;
-  readonly row: number;
+  id: number;
+  col: number;
+  row: number;
+  /** Niveau de chaque jauge, de 1 à MAX_LEVEL. */
   levels: GaugeLevels;
-  /** Total payé (pose + améliorations) : base du prix de revente. */
-  spent: number;
-  /** Secondes avant le prochain tir. */
+  /** Secondes avant le prochain tir possible. */
   cooldown: number;
-  kills: number;
 }
 
 export interface Enemy {
-  readonly id: number;
-  readonly kind: EnemyKind;
+  id: number;
+  kind: EnemyKind;
   hp: number;
-  readonly maxHp: number;
-  /** Vitesse en cases par seconde. */
-  readonly speed: number;
-  readonly reward: number;
+  maxHp: number;
   /** Distance parcourue sur le chemin, en cases. */
   distance: number;
 }
 
-export interface Projectile {
-  readonly id: number;
-  readonly towerId: number;
-  readonly targetId: number;
-  readonly damage: number;
-  x: number;
-  y: number;
-}
-
+/**
+ * État complet d'une partie : du JSON pur, sans horloge ni hasard. Le sauvegarder tel quel puis le
+ * recharger redonne exactement la même partie, ennemis en route compris.
+ */
 export interface GameState {
   phase: Phase;
-  /** Numéro de la dernière vague lancée (0 avant la première). */
+  /** Numéro de la dernière vague lancée (0 avant la première) : c'est le score. */
   wave: number;
   lives: number;
   money: number;
   towers: Tower[];
   enemies: Enemy[];
-  projectiles: Projectile[];
-  /** Ennemis de la vague en cours qui ne sont pas encore entrés sur la carte. */
-  spawnQueue: EnemyKind[];
-  /** Secondes avant l'entrée du prochain ennemi de la file. */
+  /** Nombre d'ennemis de la vague en cours déjà entrés. */
+  spawnedCount: number;
+  /** Secondes avant la prochaine entrée d'ennemi. */
   spawnTimer: number;
-  /** Secondes avant le départ automatique de la vague suivante ; null = attend le clic (avant la vague 1). */
-  intermissionLeft: number | null;
+  /** Secondes avant le départ automatique de la vague suivante (phase `countdown`). */
+  countdown: number;
   nextId: number;
 }
+
+/** Ce qui s'est passé pendant un pas : le rendu et l'interface s'en servent, la logique n'en dépend pas. */
+export type GameEvent =
+  | { type: "waveStarted"; wave: number; bonus: number }
+  | { type: "shot"; towerId: number; from: Point; to: Point }
+  | { type: "killed"; kind: EnemyKind; at: Point; bounty: number }
+  | { type: "leaked"; kind: EnemyKind; livesLost: number }
+  | { type: "waveCleared"; wave: number }
+  | { type: "gameOver"; wave: number };

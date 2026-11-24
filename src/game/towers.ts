@@ -1,86 +1,98 @@
-import { BALANCE, GAUGE_VALUES } from "./balance.ts";
-import { type Cell, isInsideGrid, isOnPath } from "./grid.ts";
-import type { GameState, Gauge, GaugeLevels, Tower } from "./types.ts";
+import { GAUGES, GAUGE_VALUES, MAX_LEVEL, SELL_RATIO, TOWER_COST, UPGRADE_COSTS, type Gauge } from "./balance.ts";
+import { isInsideGrid, isOnPath, type Cell } from "./grid.ts";
+import type { GameState, Tower } from "./types.ts";
 
-export interface TowerStats {
-  readonly damage: number;
-  readonly range: number;
-  readonly fireRate: number;
+/** Valeur d'une jauge à un niveau donné (dégâts, portée en cases ou tirs par seconde). */
+export function gaugeValue(gauge: Gauge, level: number): number {
+  const boundedLevel = Math.min(Math.max(level, 1), MAX_LEVEL);
+  return GAUGE_VALUES[gauge][boundedLevel - 1] ?? 0;
 }
 
-function gaugeValue(gauge: Gauge, level: number): number {
-  const values = GAUGE_VALUES[gauge];
-  const index = Math.min(Math.max(level, 1), values.length) - 1;
-  return values[index] ?? 0;
+/** Valeur actuelle d'une jauge de la tourelle. */
+export function towerStat(tower: Tower, gauge: Gauge): number {
+  return gaugeValue(gauge, tower.levels[gauge]);
 }
 
-/** Caractéristiques d'une tourelle selon le niveau de ses trois jauges. */
-export function towerStats(levels: GaugeLevels): TowerStats {
-  return {
-    damage: gaugeValue("damage", levels.damage),
-    range: gaugeValue("range", levels.range),
-    fireRate: gaugeValue("rate", levels.rate),
-  };
-}
-
-/** Prix pour monter une jauge depuis `level` ; null si elle est déjà au maximum. */
+/** Prix pour passer du niveau donné au suivant, ou `null` au niveau maximum. */
 export function upgradeCost(level: number): number | null {
-  if (level >= BALANCE.maxLevel) return null;
-  return BALANCE.upgradeCosts[level - 1] ?? null;
+  if (level >= MAX_LEVEL) {
+    return null;
+  }
+  return UPGRADE_COSTS[level - 1] ?? null;
 }
 
-/** Argent rendu à la revente : 70 % de tout ce que la tourelle a coûté, arrondi à l'inférieur. */
+/** Tout ce que la tourelle a coûté. Calculé depuis ses niveaux : rien à stocker, rien à désynchroniser. */
+export function towerSpent(tower: Tower): number {
+  let spent = TOWER_COST;
+  for (const gauge of GAUGES) {
+    for (let level = 1; level < tower.levels[gauge]; level++) {
+      spent += upgradeCost(level) ?? 0;
+    }
+  }
+  return spent;
+}
+
+/** Argent rendu si on vend la tourelle. */
 export function sellValue(tower: Tower): number {
-  return Math.floor(tower.spent * BALANCE.sellRatio);
+  return Math.floor(towerSpent(tower) * SELL_RATIO);
 }
 
+/** Tourelle posée sur la case, s'il y en a une. */
 export function towerAt(state: GameState, cell: Cell): Tower | undefined {
   return state.towers.find((tower) => tower.col === cell.col && tower.row === cell.row);
 }
 
-export function findTower(state: GameState, towerId: number): Tower | undefined {
+/** Tourelle par identifiant. */
+export function towerById(state: GameState, towerId: number): Tower | undefined {
   return state.towers.find((tower) => tower.id === towerId);
 }
 
-/** Vrai si la case accepte une tourelle : dans la carte, hors du chemin, libre. L'argent est vérifié à part. */
+/** Vrai si la case accepte une tourelle (dans la carte, hors chemin, libre), sans regarder l'argent. */
 export function isBuildable(state: GameState, cell: Cell): boolean {
-  return isInsideGrid(cell) && !isOnPath(cell) && !towerAt(state, cell);
+  return isInsideGrid(cell) && !isOnPath(cell) && towerAt(state, cell) === undefined;
 }
 
-/** Pose une tourelle (niveau 1 partout) si la case est libre et l'argent suffit. Renvoie la tourelle, sinon null. */
+/** Pose une tourelle si la case est libre et l'argent suffisant. Renvoie la tourelle, ou `null` si refusé. */
 export function buildTower(state: GameState, cell: Cell): Tower | null {
-  if (state.phase === "gameOver" || !isBuildable(state, cell) || state.money < BALANCE.towerCost) return null;
+  if (state.phase === "over" || !isBuildable(state, cell) || state.money < TOWER_COST) {
+    return null;
+  }
   const tower: Tower = {
-    id: state.nextId++,
+    id: state.nextId,
     col: cell.col,
     row: cell.row,
     levels: { damage: 1, range: 1, rate: 1 },
-    spent: BALANCE.towerCost,
     cooldown: 0,
-    kills: 0,
   };
-  state.money -= BALANCE.towerCost;
+  state.nextId += 1;
+  state.money -= TOWER_COST;
   state.towers.push(tower);
   return tower;
 }
 
-/** Monte une jauge d'un niveau si l'argent suffit et qu'elle n'est pas au maximum. Vrai si c'est fait. */
+/** Monte une jauge d'un niveau si possible. Renvoie vrai si l'amélioration a eu lieu. */
 export function upgradeTower(state: GameState, towerId: number, gauge: Gauge): boolean {
-  const tower = findTower(state, towerId);
-  if (!tower || state.phase === "gameOver") return false;
+  const tower = towerById(state, towerId);
+  if (state.phase === "over" || tower === undefined) {
+    return false;
+  }
   const cost = upgradeCost(tower.levels[gauge]);
-  if (cost === null || state.money < cost) return false;
+  if (cost === null || state.money < cost) {
+    return false;
+  }
   state.money -= cost;
-  tower.spent += cost;
   tower.levels[gauge] += 1;
   return true;
 }
 
-/** Vend la tourelle : elle disparaît et rend sellValue. Ses projectiles déjà tirés continuent leur course. */
-export function sellTower(state: GameState, towerId: number): boolean {
-  const tower = findTower(state, towerId);
-  if (!tower || state.phase === "gameOver") return false;
-  state.money += sellValue(tower);
+/** Vend la tourelle. Renvoie l'argent rendu, ou `null` si la vente est refusée. */
+export function sellTower(state: GameState, towerId: number): number | null {
+  const tower = towerById(state, towerId);
+  if (state.phase === "over" || tower === undefined) {
+    return null;
+  }
+  const refund = sellValue(tower);
+  state.money += refund;
   state.towers = state.towers.filter((candidate) => candidate.id !== towerId);
-  return true;
+  return refund;
 }

@@ -1,60 +1,60 @@
 import { describe, expect, it } from "vitest";
-import { createEnemy, hpScale, isBossWave, regularEnemyCount, spawnInterval, waveComposition } from "./waves.ts";
+import { enemyKindAt, enemyMaxHp, isBossWave, regularEnemyCount, spawnInterval, waveSize } from "./waves.ts";
 
-function countKinds(wave: number): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const kind of waveComposition(wave)) counts[kind] = (counts[kind] ?? 0) + 1;
-  return counts;
+function roster(wave: number): string[] {
+  return Array.from({ length: waveSize(wave) }, (_, index) => enemyKindAt(wave, index));
 }
 
 describe("waves", () => {
-  it("has 5 + 2 x wave regular enemies, capped at 60", () => {
-    expect(regularEnemyCount(1)).toBe(7);
-    expect(regularEnemyCount(10)).toBe(25);
-    expect(regularEnemyCount(40)).toBe(60);
+  it("grows by two enemies per wave, capped at 50", () => {
+    expect(regularEnemyCount(1)).toBe(8);
+    expect(regularEnemyCount(10)).toBe(26);
+    expect(regularEnemyCount(22)).toBe(50);
+    expect(regularEnemyCount(80)).toBe(50);
   });
 
-  it("only sends normal enemies in waves 1 and 2", () => {
-    expect(countKinds(1)).toEqual({ normal: 7 });
-    expect(countKinds(2)).toEqual({ normal: 9 });
+  it("only has normal enemies in waves 1 and 2", () => {
+    expect(new Set(roster(1))).toEqual(new Set(["normal"]));
+    expect(new Set(roster(2))).toEqual(new Set(["normal"]));
   });
 
-  it("adds a fast enemy every third slot from wave 3, a tank every fifth slot from wave 5", () => {
-    expect(countKinds(3)).toEqual({ normal: 8, fast: 3 });
-    expect(waveComposition(5).slice(0, 5)).toEqual(["normal", "normal", "fast", "normal", "tank"]);
-    expect(countKinds(5)).toEqual({ normal: 8, fast: 4, tank: 3 });
+  it("ends with a pack of fast enemies from wave 3", () => {
+    expect(roster(3)).toEqual([...Array<string>(8).fill("normal"), ...Array<string>(4).fill("fast")]);
   });
 
-  it("ends every tenth wave with a boss", () => {
+  it("puts a tank every fourth enemy from wave 4", () => {
+    const wave4 = roster(4);
+    expect(wave4).toHaveLength(14);
+    expect(wave4.filter((kind) => kind === "tank")).toHaveLength(3);
+    expect(wave4[3]).toBe("tank");
+    expect(wave4[7]).toBe("tank");
+    expect(wave4[13]).toBe("fast");
+  });
+
+  it("adds one boss, last, every 10 waves", () => {
+    expect(isBossWave(0)).toBe(false);
     expect(isBossWave(9)).toBe(false);
     expect(isBossWave(10)).toBe(true);
-    expect(isBossWave(0)).toBe(false);
-    expect(waveComposition(10).at(-1)).toBe("boss");
-    expect(waveComposition(20).filter((kind) => kind === "boss")).toHaveLength(1);
+    expect(isBossWave(20)).toBe(true);
+    expect(waveSize(10)).toBe(27);
+    expect(roster(10).at(-1)).toBe("boss");
+    expect(roster(10).filter((kind) => kind === "boss")).toHaveLength(1);
+    expect(roster(9)).not.toContain("boss");
   });
 
-  it("is deterministic", () => {
-    expect(waveComposition(17)).toEqual(waveComposition(17));
-  });
-
-  it("spawns faster and faster, never under 0.45 s", () => {
+  it("tightens the spawn interval down to a floor", () => {
     expect(spawnInterval(1)).toBeCloseTo(0.9);
     expect(spawnInterval(11)).toBeCloseTo(0.7);
-    expect(spawnInterval(50)).toBe(0.45);
+    expect(spawnInterval(40)).toBeCloseTo(0.4);
   });
 
-  it("grows enemy life by 15 % per wave", () => {
-    expect(hpScale(1)).toBe(1);
-    expect(createEnemy("normal", 1, 1).maxHp).toBe(20);
-    expect(createEnemy("normal", 10, 1).maxHp).toBe(70);
-    expect(createEnemy("normal", 20, 1).maxHp).toBe(285);
-    expect(createEnemy("boss", 10, 1).maxHp).toBe(1759);
-  });
-
-  it("gives fast enemies twice the speed and tanks four times the life of a normal one", () => {
-    const normal = createEnemy("normal", 1, 1);
-    expect(createEnemy("fast", 1, 2).speed).toBe(normal.speed * 2);
-    expect(createEnemy("tank", 1, 3).maxHp).toBe(normal.maxHp * 4);
-    expect(createEnemy("tank", 1, 3).speed).toBeLessThan(normal.speed);
+  it("multiplies enemy health by 1.12 each wave", () => {
+    expect(enemyMaxHp("normal", 1)).toBe(24);
+    expect(enemyMaxHp("fast", 1)).toBe(12);
+    expect(enemyMaxHp("tank", 1)).toBe(96);
+    expect(enemyMaxHp("normal", 10)).toBe(67);
+    expect(enemyMaxHp("normal", 20)).toBe(207);
+    expect(enemyMaxHp("boss", 10)).toBe(1331);
+    expect(enemyMaxHp("boss", 20)).toBe(4134);
   });
 });

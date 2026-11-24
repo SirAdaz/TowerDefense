@@ -1,128 +1,148 @@
-import { BALANCE } from "./balance.ts";
-import { createGame } from "./game.ts";
-import { isBuildable } from "./towers.ts";
-import { GAUGES, type GameState, type GaugeLevels, type Tower } from "./types.ts";
+import { COUNTDOWN_SECONDS, ENEMY_KINDS, GAUGES, MAX_LEVEL, START_LIVES } from "./balance.ts";
+import { PATH_LENGTH, cellKey, isInsideGrid, isOnPath } from "./grid.ts";
+import type { Enemy, GameState, Phase, Tower } from "./types.ts";
+import { waveSize } from "./waves.ts";
 
-/** Sous-ensemble de Storage utilisé ici : localStorage dans le navigateur, une Map dans les tests. */
+/** Stockage clé-valeur minimal : `localStorage` dans le navigateur, une `Map` dans les tests. */
 export interface KeyValueStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
 }
 
-export const SAVE_KEY = "tower-defense.save.v1";
-export const RECORD_KEY = "tower-defense.record.v1";
-
-interface SavedTower {
-  col: number;
-  row: number;
-  levels: GaugeLevels;
-  spent: number;
-  kills: number;
+/** Ce qui est écrit sur le disque : l'état complet de la partie et le réglage de vitesse. */
+export interface Snapshot {
+  readonly state: GameState;
+  readonly isFast: boolean;
 }
 
-/** Ce qui est sauvegardé : l'état entre deux vagues (jamais les ennemis en route). */
-export interface SaveData {
-  version: 1;
-  wave: number;
-  lives: number;
-  money: number;
-  towers: SavedTower[];
+export const SAVE_KEY = "towerdefense.snapshot.v1";
+export const RECORD_KEY = "towerdefense.best-wave.v1";
+
+const SAVE_VERSION = 1;
+/** Une partie perdue n'est jamais sauvegardée : `over` n'est pas une phase valide à la lecture. */
+const SAVED_PHASES: readonly Phase[] = ["ready", "wave", "countdown"];
+
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Photo de la partie à sauvegarder. Appelée seulement entre deux vagues : une vague en cours n'est pas sauvée. */
-export function toSaveData(state: GameState): SaveData {
-  const towers = state.towers.map(({ col, row, levels, spent, kills }) => ({ col, row, levels: { ...levels }, spent, kills }));
-  return { version: 1, wave: state.wave, lives: state.lives, money: state.money, towers };
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
-function isWholeNumber(value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
+function isAmount(value: unknown, max: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= max;
 }
 
-function isValidLevels(value: unknown): value is GaugeLevels {
-  if (typeof value !== "object" || value === null) return false;
-  const levels = value as Record<string, unknown>;
-  return GAUGES.every((gauge) => isWholeNumber(levels[gauge], 1, BALANCE.maxLevel));
+function isLevel(value: unknown): boolean {
+  return isCount(value) && value >= 1 && value <= MAX_LEVEL;
 }
 
-function isValidTower(value: unknown): value is SavedTower {
-  if (typeof value !== "object" || value === null) return false;
-  const tower = value as Record<string, unknown>;
-  return (
-    isWholeNumber(tower.col, 0) &&
-    isWholeNumber(tower.row, 0) &&
-    isValidLevels(tower.levels) &&
-    isWholeNumber(tower.spent, 0) &&
-    isWholeNumber(tower.kills, 0)
-  );
-}
-
-function isValidSave(value: unknown): value is SaveData {
-  if (typeof value !== "object" || value === null) return false;
-  const save = value as Record<string, unknown>;
-  return (
-    save.version === 1 &&
-    isWholeNumber(save.wave, 0) &&
-    isWholeNumber(save.lives, 1, BALANCE.startingLives) &&
-    isWholeNumber(save.money, 0) &&
-    Array.isArray(save.towers) &&
-    save.towers.every(isValidTower)
-  );
-}
-
-function restoreTowers(state: GameState, towers: readonly SavedTower[]): void {
-  for (const saved of towers) {
-    if (!isBuildable(state, saved)) continue;
-    const tower: Tower = { id: state.nextId++, ...saved, levels: { ...saved.levels }, cooldown: 0 };
-    state.towers.push(tower);
+function isTower(value: unknown): value is Tower {
+  if (!isRecord(value) || !isRecord(value.levels)) {
+    return false;
   }
+  const { col, row, levels } = value;
+  if (!isCount(value.id) || !isCount(col) || !isCount(row) || !isAmount(value.cooldown, 1)) {
+    return false;
+  }
+  const cell = { col, row };
+  return isInsideGrid(cell) && !isOnPath(cell) && GAUGES.every((gauge) => isLevel(levels[gauge]));
 }
 
-/**
- * Reconstruit une partie depuis le texte sauvegardé. null si le texte est absent, illisible ou
- * incohérent (version inconnue, valeurs hors bornes) : on repart alors d'une partie neuve plutôt
- * que de planter. Une tourelle sur une case interdite ou déjà prise est ignorée.
- */
-export function parseSave(raw: string | null): GameState | null {
-  if (!raw) return null;
+function isEnemy(value: unknown): value is Enemy {
+  if (!isRecord(value) || !isCount(value.id)) {
+    return false;
+  }
+  const isKnownKind = ENEMY_KINDS.some((kind) => kind === value.kind);
+  const hasValidHp = isAmount(value.maxHp, Number.MAX_SAFE_INTEGER) && isAmount(value.hp, value.maxHp) && value.hp > 0;
+  return isKnownKind && hasValidHp && isAmount(value.distance, PATH_LENGTH);
+}
+
+function hasValidCounters(value: UnknownRecord): boolean {
+  return (
+    SAVED_PHASES.some((phase) => phase === value.phase) &&
+    isCount(value.wave) &&
+    isCount(value.lives) &&
+    value.lives >= 1 &&
+    value.lives <= START_LIVES &&
+    isCount(value.money) &&
+    isCount(value.nextId) &&
+    isAmount(value.countdown, COUNTDOWN_SECONDS)
+  );
+}
+
+function hasValidEntities(value: UnknownRecord): boolean {
+  const { towers, enemies } = value;
+  if (!Array.isArray(towers) || !Array.isArray(enemies) || !towers.every(isTower) || !enemies.every(isEnemy)) {
+    return false;
+  }
+  const occupiedCells = new Set(towers.map(cellKey));
+  return occupiedCells.size === towers.length;
+}
+
+/** Cohérence entre les champs : une sauvegarde modifiée à la main ne doit pas donner une partie impossible. */
+function isConsistent(state: GameState): boolean {
+  const hasWaveStarted = state.wave >= 1;
+  if (state.phase === "ready") {
+    return !hasWaveStarted && state.enemies.length === 0;
+  }
+  const isSpawnPossible = state.spawnedCount <= waveSize(state.wave) && state.enemies.length <= state.spawnedCount;
+  if (state.phase === "countdown") {
+    return hasWaveStarted && state.enemies.length === 0;
+  }
+  return hasWaveStarted && isSpawnPossible;
+}
+
+function isGameState(value: unknown): value is GameState {
+  if (!isRecord(value) || !hasValidCounters(value) || !hasValidEntities(value)) {
+    return false;
+  }
+  const hasValidSpawn = isCount(value.spawnedCount) && typeof value.spawnTimer === "number" && Math.abs(value.spawnTimer) <= 1;
+  return hasValidSpawn && isConsistent(value as unknown as GameState);
+}
+
+/** Lit une sauvegarde. Renvoie `null` si elle est absente, illisible ou incohérente : on repart alors à neuf. */
+export function parseSnapshot(text: string | null): Snapshot | null {
+  if (text === null) {
+    return null;
+  }
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(text);
   } catch {
     return null;
   }
-  if (!isValidSave(parsed)) return null;
-  const state = createGame();
-  state.wave = parsed.wave;
-  state.lives = parsed.lives;
-  state.money = parsed.money;
-  state.intermissionLeft = parsed.wave === 0 ? null : BALANCE.intermissionSeconds;
-  restoreTowers(state, parsed.towers);
-  return state;
+  if (!isRecord(parsed) || parsed.version !== SAVE_VERSION || !isGameState(parsed.state)) {
+    return null;
+  }
+  return { state: parsed.state, isFast: parsed.isFast === true };
 }
 
-/** Écrit la sauvegarde, ou l'efface si la partie est perdue. Les erreurs du stockage (plein, interdit) sont ignorées : le jeu continue sans sauvegarde. */
-export function writeSave(store: KeyValueStore, state: GameState): boolean {
+/** Écrit la partie. Renvoie faux si le stockage refuse (navigation privée, quota) : le jeu continue sans. */
+export function saveSnapshot(store: KeyValueStore, snapshot: Snapshot): boolean {
   try {
-    if (state.phase === "gameOver") store.removeItem(SAVE_KEY);
-    else store.setItem(SAVE_KEY, JSON.stringify(toSaveData(state)));
+    store.setItem(SAVE_KEY, JSON.stringify({ version: SAVE_VERSION, ...snapshot }));
     return true;
   } catch {
     return false;
   }
 }
 
-export function readSave(store: KeyValueStore): GameState | null {
+/** Charge la partie sauvegardée, ou `null` s'il n'y en a pas de valide. */
+export function loadSnapshot(store: KeyValueStore): Snapshot | null {
   try {
-    return parseSave(store.getItem(SAVE_KEY));
+    return parseSnapshot(store.getItem(SAVE_KEY));
   } catch {
     return null;
   }
 }
 
-/** Efface la sauvegarde (nouvelle partie). Faux si le stockage refuse : la partie neuve démarre quand même. */
-export function clearSave(store: KeyValueStore): boolean {
+/** Efface la partie sauvegardée (défaite ou nouvelle partie). Le record n'est pas touché. */
+export function clearSnapshot(store: KeyValueStore): boolean {
   try {
     store.removeItem(SAVE_KEY);
     return true;
@@ -131,20 +151,22 @@ export function clearSave(store: KeyValueStore): boolean {
   }
 }
 
-/** Meilleure vague atteinte (0 si aucune ou illisible). */
+/** Record : meilleure vague atteinte, 0 si aucun ou si la valeur stockée est invalide. */
 export function readRecord(store: KeyValueStore): number {
   try {
-    const record = Number(store.getItem(RECORD_KEY));
-    return isWholeNumber(record, 0) ? record : 0;
+    const stored = Number(store.getItem(RECORD_KEY));
+    return isCount(stored) ? stored : 0;
   } catch {
     return 0;
   }
 }
 
-/** Enregistre `wave` si elle bat le record. Renvoie le record à jour. */
+/** Enregistre la vague atteinte si elle bat le record. Renvoie le record à jour. */
 export function updateRecord(store: KeyValueStore, wave: number): number {
   const record = readRecord(store);
-  if (wave <= record) return record;
+  if (wave <= record) {
+    return record;
+  }
   try {
     store.setItem(RECORD_KEY, String(wave));
   } catch {
