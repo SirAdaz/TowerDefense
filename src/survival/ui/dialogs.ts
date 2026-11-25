@@ -100,7 +100,8 @@ export function createDialogs(handlers: DialogHandlers): Dialogs {
   };
   const onDismiss = (dialog: HTMLDialogElement, react: () => void): void => {
     dialog.addEventListener("close", () => {
-      if (wanted.has(dialog)) {
+      // L'événement arrive après coup : une fenêtre rouverte entre-temps (reprise puis pause aussitôt) n'est pas un abandon.
+      if (wanted.has(dialog) && !dialog.open) {
         react();
       }
     });
