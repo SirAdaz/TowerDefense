@@ -10,6 +10,8 @@ import { countSolved, forgetUsername, loadUsername, saveSolvedCount, saveUsernam
 import { describeRemaining, pluralize } from "./format.ts";
 import { createPuzzleView } from "./puzzleView.ts";
 import type { PuzzleView } from "./puzzleView.ts";
+import { createReportView } from "./reportView.ts";
+import type { ReportView } from "./reportView.ts";
 import { FAILURE_MESSAGES, TEXTS } from "./texts.ts";
 
 interface Elements {
@@ -32,6 +34,7 @@ interface App {
   readonly keyValueStore: KeyValueStore;
   readonly store: ChessStore;
   readonly puzzleView: PuzzleView;
+  readonly reportView: ReportView;
   username: string | null;
   /** Présent pendant une analyse : sert à l'annuler, et à refuser d'en lancer deux. */
   abortController: AbortController | null;
@@ -61,10 +64,11 @@ function renderAccount(app: App): void {
   setText(elements.accountName, username ?? "");
 }
 
-/** Relit les problèmes du joueur et met à jour l'entraîneur et le compteur lu par l'accueil. */
+/** Relit les données du joueur et met à jour l'entraîneur, le bilan et le compteur lu par l'accueil. */
 async function refreshPuzzles(app: App): Promise<void> {
   const puzzles = app.username === null ? [] : await app.store.listPuzzles(app.username);
   app.puzzleView.setPuzzles(puzzles);
+  app.reportView.setGames(app.username === null ? [] : await app.store.listGames(app.username));
   if (app.username !== null) {
     saveSolvedCount(app.keyValueStore, countSolved(puzzles));
   }
@@ -191,6 +195,7 @@ export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void 
     store,
     username: loadUsername(keyValueStore),
     abortController: null,
+    reportView: createReportView(),
     puzzleView: createPuzzleView({
       now: () => Date.now(),
       onReviewed: (puzzle) => {

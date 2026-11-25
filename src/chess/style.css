@@ -433,6 +433,124 @@ progress::-moz-progress-bar {
   border-top: 1px solid var(--line);
 }
 
+/* Bilan : une cadence à la fois. Les chiffres sont du texte, la couleur ne porte aucune information seule. */
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab[aria-pressed="true"] {
+  border-color: var(--brass);
+  background: var(--felt);
+  box-shadow: inset 0 -3px 0 var(--brass);
+}
+
+.report,
+.report-block {
+  display: grid;
+  gap: 14px;
+}
+
+.report-block {
+  gap: 8px;
+}
+
+.report h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.stat {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-raised);
+}
+
+.stat dd {
+  margin: 0;
+}
+
+.stat-label,
+.stat-detail {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.openings {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.openings th,
+.openings td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+  text-align: left;
+}
+
+.openings thead th {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.openings .number {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.phases {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phase {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+}
+
+.phase-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--felt);
+}
+
+.phase-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  background: var(--brass);
+}
+
 .dialog {
   max-width: min(100% - 32px, 420px);
   padding: 20px;

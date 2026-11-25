@@ -53,6 +53,52 @@
           </div>
         </section>
 
+        <section id="report" class="panel" aria-labelledby="report-title" hidden>
+          <div class="panel-head">
+            <h2 id="report-title">Bilan</h2>
+            <div class="tabs" role="group" aria-label="Cadence">
+              <button type="button" class="btn tab" data-time-class="bullet" aria-pressed="false">Bullet</button>
+              <button type="button" class="btn tab" data-time-class="blitz" aria-pressed="false">Blitz</button>
+              <button type="button" class="btn tab" data-time-class="rapid" aria-pressed="false">Rapide</button>
+            </div>
+          </div>
+
+          <p id="report-empty" class="empty" role="status"></p>
+
+          <div id="report-body" class="report" hidden>
+            <dl id="report-stats" class="stats"></dl>
+
+            <div class="report-block">
+              <h3>Ouvertures les plus jouées</h3>
+              <table class="openings">
+                <thead>
+                  <tr>
+                    <th scope="col">Ouverture</th>
+                    <th scope="col" class="number">Parties</th>
+                    <th scope="col" class="number">Victoires</th>
+                  </tr>
+                </thead>
+                <tbody id="report-openings"></tbody>
+              </table>
+            </div>
+
+            <div class="report-block">
+              <h3 id="report-lost-title"></h3>
+              <ul id="report-lost" class="phases"></ul>
+            </div>
+
+            <div class="report-block">
+              <h3>Fin de pendule</h3>
+              <p id="report-clock"></p>
+            </div>
+
+            <p class="hint">
+              Chiffres calculés sur vos parties analysées ici, avec un moteur allégé : la précision n'est pas celle affichée par
+              chess.com.
+            </p>
+          </div>
+        </section>
+
         <section class="panel" aria-labelledby="account-title">
           <h2 id="account-title">Vos parties</h2>
 

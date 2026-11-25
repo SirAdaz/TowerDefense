@@ -15,6 +15,13 @@ export function pluralize(count: number, singular: string, plural: string): stri
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+const DECIMAL_FORMAT = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Nombre à une décimale, à la française : « 2,5 ». */
+export function formatDecimal(amount: number): string {
+  return DECIMAL_FORMAT.format(amount);
+}
+
 /** Échéance dite simplement : « aujourd'hui », « demain », « dans 3 jours ». */
 export function describeDelay(dueAt: number, now: number): string {
   const days = Math.ceil((dueAt - now) / DAY_MS);
