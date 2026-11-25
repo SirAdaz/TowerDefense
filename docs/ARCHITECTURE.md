@@ -1,17 +1,31 @@
 # Architecture
 
-Site statique : `index.html` + un bundle Vite (TypeScript) + la police. Aucun serveur applicatif, aucune base, aucun appel réseau à l'exécution.
+Site statique à plusieurs pages (Vite multi-page, TypeScript) : l'accueil à la racine, un dossier par jeu. Aucun serveur applicatif, aucune base, aucun appel réseau à l'exécution.
+
+## Pages
+
+| Adresse            | Page                       | Code                 |
+| ------------------ | -------------------------- | -------------------- |
+| `/`                | `index.html`               | `src/home/`          |
+| `/tower-defense/`  | `tower-defense/index.html` | `src/tower-defense/` |
+
+- Les pages sont déclarées dans `vite.config.ts` (`PAGES`). `base: "/"` : le site est servi à la racine de son domaine, les assets (`/assets/…`) sont communs.
+- L'accueil est du HTML statique : une carte par jeu. `src/home/records.ts` lit le record de chaque jeu dans le `localStorage`, à la clé où le jeu l'écrit, et l'affiche sur sa carte.
+- `src/shared/storage.ts` : l'interface `KeyValueStore` et son implémentation navigateur, communes à toutes les pages.
+- Chaque jeu porte un lien « ← Jeux » vers l'accueil et garde ses propres clés `localStorage` (même origine : rien n'est perdu d'une page à l'autre).
+
+Le reste de cette page décrit le tower defense (`src/tower-defense/`).
 
 ## Découpage
 
 | Dossier       | Rôle                                                                                                                                              |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/game/`   | Logique pure, testée par Vitest avec seuils de couverture. Ni DOM, ni horloge, ni hasard ; le stockage passe par l'interface `KeyValueStore`.      |
-| `src/render/` | Dessin de la carte sur le `<canvas>` (style « plan technique ») à partir de l'état. Ne modifie jamais l'état.                                      |
-| `src/ui/`     | Interface HTML : grille de boutons posée sur le canvas, bandeau, panneau, session (pause, vitesse, sauvegarde) et boucle de jeu.                   |
+| `game/`       | Logique pure, testée par Vitest avec seuils de couverture. Ni DOM, ni horloge, ni hasard ; le stockage passe par l'interface `KeyValueStore`.      |
+| `render/`     | Dessin de la carte sur le `<canvas>` (style « plan technique ») à partir de l'état. Ne modifie jamais l'état.                                      |
+| `ui/`         | Interface HTML : grille de boutons posée sur le canvas, bandeau, panneau, session (pause, vitesse, sauvegarde) et boucle de jeu.                   |
 | `tests/`      | Joueur automatique (`bot.ts`) et règles d'équilibrage (`balance.test.ts`). `scripts/simulate.ts` affiche la courbe de difficulté (`npm run simulate`). |
 
-### `src/game/`
+### `src/tower-defense/game/`
 
 | Fichier      | Contenu                                                                                                       |
 | ------------ | ------------------------------------------------------------------------------------------------------------- |
@@ -39,7 +53,7 @@ Site statique : `index.html` + un bundle Vite (TypeScript) + la police. Aucun se
 ## Interface
 
 - Le canvas ne reçoit aucun événement. Par-dessus, une grille CSS de 160 emplacements : un `<button>` par case constructible, un emplacement vide par case du chemin. Souris et clavier passent par les mêmes boutons (clic, Entrée, flèches avec « tabindex » itinérant).
-- Le gabarit est écrit dans `index.html` ; `src/ui/` ne fait que le relier à l'état. Les textes ne sont réécrits que s'ils changent.
+- Le gabarit est écrit dans `tower-defense/index.html` ; `ui/` ne fait que le relier à l'état. Les textes ne sont réécrits que s'ils changent.
 - Aucun style en ligne : la CSP `style-src 'self'` de l'image nginx est respectée.
 
 ## Données locales
@@ -53,9 +67,10 @@ Toute erreur du stockage (navigation privée, quota) est absorbée : le jeu marc
 
 ## Rendu
 
-Canvas dimensionné sur sa taille affichée × `devicePixelRatio`. Le dessin se fait en unités de case (`setTransform`), les textes en pixels réels : la carte reste nette de 1024 à 1920 px. Les couleurs du canvas sont dans `src/render/theme.ts`, celles de l'interface dans `src/style.css`.
+Canvas dimensionné sur sa taille affichée × `devicePixelRatio`. Le dessin se fait en unités de case (`setTransform`), les textes en pixels réels : la carte reste nette de 1024 à 1920 px. Les couleurs du canvas sont dans `src/tower-defense/render/theme.ts`, celles de l'interface dans `src/tower-defense/style.css`.
 
 ## Exécution
 
 - Dev : `docker compose up -d --build` → Vite sur http://localhost:5180.
 - Build de prod : image `prod` (nginx 1.30.4, en-têtes de sécurité, CSP `default-src 'self'`) → http://localhost:5181 avec `--profile prod`.
+- nginx (`docker/nginx.conf`) : `/` sert l'accueil, chaque dossier de jeu retombe sur sa propre page, toute autre adresse donne une 404. Seul `dist/` est dans l'image : aucun fichier source n'est servi.

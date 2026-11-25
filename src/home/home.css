@@ -1,0 +1,151 @@
+/* Accueil : neutre, sans identité propre. Chaque jeu garde la sienne, la vignette en donne un aperçu. */
+:root {
+  --bg: #f4f4f2;
+  --surface: #ffffff;
+  --line: #d5d5d0;
+  --ink: #1b1c1e;
+  --muted: #55585e;
+  --focus: #1a5fd0;
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151618;
+    --surface: #1d1f22;
+    --line: #34373c;
+    --ink: #eceded;
+    --muted: #a9adb4;
+    --focus: #8ab4ff;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+h1,
+h2,
+p,
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.home {
+  width: min(100% - 48px, 920px);
+  margin-inline: auto;
+  padding-block: 72px 48px;
+}
+
+.home-header h1 {
+  font-size: 2rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.home-header p {
+  max-width: 60ch;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+  list-style: none;
+}
+
+/* La carte entière est cliquable : le lien du titre s'étend sur elle (::after), son nom reste court. */
+.game-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.game-card:hover {
+  border-color: var(--muted);
+  transform: translateY(-2px);
+}
+
+.game-card:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.game-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.game-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6px;
+  padding: 16px 18px 18px;
+}
+
+.game-body h2 {
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.game-link {
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+
+.game-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.game-pitch {
+  color: var(--muted);
+}
+
+.game-record {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card {
+    transition: none;
+  }
+
+  .game-card:hover {
+    transform: none;
+  }
+}

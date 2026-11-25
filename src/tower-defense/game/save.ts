@@ -2,13 +2,9 @@ import { COUNTDOWN_SECONDS, ENEMY_KINDS, GAUGES, MAX_LEVEL, START_LIVES } from "
 import { PATH_LENGTH, cellKey, isInsideGrid, isOnPath } from "./grid.ts";
 import type { Enemy, GameState, Phase, Tower } from "./types.ts";
 import { waveSize } from "./waves.ts";
+import type { KeyValueStore } from "../../shared/storage.ts";
 
-/** Stockage clé-valeur minimal : `localStorage` dans le navigateur, une `Map` dans les tests. */
-export interface KeyValueStore {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-}
+export type { KeyValueStore };
 
 /** Ce qui est écrit sur le disque : l'état complet de la partie et le réglage de vitesse. */
 export interface Snapshot {

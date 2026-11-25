@@ -1,4 +1,9 @@
-import type { KeyValueStore } from "../game/save.ts";
+/** Stockage clé-valeur minimal : `localStorage` dans le navigateur, une `Map` dans les tests. */
+export interface KeyValueStore {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
 
 /** Stockage en mémoire : la partie vit le temps de l'onglet, rien n'est gardé ensuite. */
 function memoryStore(): KeyValueStore {
@@ -16,7 +21,7 @@ function memoryStore(): KeyValueStore {
 
 /**
  * `localStorage` du navigateur, ou un stockage en mémoire quand il est interdit (certains modes
- * privés lèvent une erreur dès l'accès) : le jeu reste jouable, sans sauvegarde ni record.
+ * privés lèvent une erreur dès l'accès) : les jeux restent jouables, sans sauvegarde ni record.
  */
 export function browserStore(): KeyValueStore {
   try {

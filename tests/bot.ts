@@ -1,8 +1,8 @@
-import { GAUGES, GAUGE_VALUES, TOWER_COST, type Gauge } from "../src/game/balance.ts";
-import { createGame, startNextWave, step } from "../src/game/engine.ts";
-import { COLS, PATH, ROWS, cellCenter, isOnPath, type Cell } from "../src/game/grid.ts";
-import { buildTower, isBuildable, upgradeCost, upgradeTower } from "../src/game/towers.ts";
-import type { GameState, Tower } from "../src/game/types.ts";
+import { GAUGES, GAUGE_VALUES, TOWER_COST, type Gauge } from "../src/tower-defense/game/balance.ts";
+import { createGame, startNextWave, step } from "../src/tower-defense/game/engine.ts";
+import { COLS, PATH, ROWS, cellCenter, isOnPath, type Cell } from "../src/tower-defense/game/grid.ts";
+import { buildTower, isBuildable, upgradeCost, upgradeTower } from "../src/tower-defense/game/towers.ts";
+import type { GameState, Tower } from "../src/tower-defense/game/types.ts";
 
 /** Profil de joueur automatique : combien de tourelles il pose, et s'il les améliore. */
 export interface BotProfile {
