@@ -1,6 +1,6 @@
 # Architecture
 
-Site statique à plusieurs pages (Vite multi-page, TypeScript) : l'accueil à la racine, un dossier par jeu. Aucun serveur applicatif, aucune base, aucun appel réseau à l'exécution.
+Site statique à plusieurs pages (Vite multi-page, TypeScript) : l'accueil à la racine, un dossier par jeu. Aucun serveur applicatif, aucune base, aucun appel réseau à l'exécution, sauf la page Échecs qui lit `api.chess.com` (voir [Échecs](#échecs-srcchess)).
 
 ## Pages
 
@@ -9,6 +9,7 @@ Site statique à plusieurs pages (Vite multi-page, TypeScript) : l'accueil à la
 | `/`                | `index.html`               | `src/home/`          |
 | `/tower-defense/`  | `tower-defense/index.html` | `src/tower-defense/` |
 | `/nuit-blanche/`   | `nuit-blanche/index.html`  | `src/survival/`      |
+| `/echecs/`         | `echecs/index.html`        | `src/chess/`         |
 
 - Les pages sont déclarées dans `vite.config.ts` (`PAGES`). `base: "/"` : le site est servi à la racine de son domaine, les assets (`/assets/…`) sont communs.
 - L'accueil est du HTML statique : une carte par jeu. `src/home/records.ts` lit le record de chaque jeu dans le `localStorage`, à la clé où le jeu l'écrit, et l'affiche sur sa carte. Il n'importe que le strict nécessaire (`profile.ts`, `ui/format.ts`) : l'accueil ne charge pas le code des jeux.
@@ -112,3 +113,19 @@ Canvas dimensionné sur sa taille affichée × `devicePixelRatio`. Le dessin se 
 - Boucle : `requestAnimationFrame`, temps borné à 0,25 s par image, converti en pas fixes. Pause, choix en attente ou menu : aucun pas.
 - Données locales : une clé, `nuitblanche.profile.v1` (meilleur score, meilleur temps, victoire, pièces, déblocages). Pas de sauvegarde en cours de partie.
 - `ui/devTools.ts` expose l'application sur `window.nuitBlancheTest` pour les tests en navigateur (lire l'état, accélérer le temps). Il n'est branché que si `import.meta.env.DEV` : le build de production ne le contient pas.
+
+## Échecs (`src/chess/`)
+
+Pas de canvas ni de boucle de jeu : une page d'entraînement. Trois dossiers, du plus pur au plus lié au navigateur.
+
+| Dossier | Rôle |
+| ------- | ---- |
+| `game/` | Logique pure, testée (mêmes seuils de couverture) : lecture des réponses de l'API (`chesscom.ts`), des PGN et des pendules (`pgn.ts`), des lignes UCI (`uci.ts`), évaluation et qualité d'un coup (`evaluation.ts`), revue d'une partie et construction des problèmes (`analysis.ts`), révision espacée (`schedule.ts`), notation française et noms des cases (`notation.ts`), pseudo et compteur lus par l'accueil (`summary.ts`). |
+| `data/` | Ce qui touche l'extérieur : `chesscomApi.ts` (`fetch` vers `api.chess.com`, erreurs typées), `store.ts` (IndexedDB, repli en mémoire), `engine.ts` (Stockfish dans un Web Worker), `analyser.ts` (file de parties, plusieurs moteurs, progression, annulation). |
+| `ui/`   | `board.ts` (64 boutons, pièces en SVG), `boardInput.ts` (glisser, clic-clic, clavier), `puzzleView.ts` (un problème à la fois), `app.ts` (pseudo, analyse, messages). |
+
+- **Analyse en deux passes.** Chaque position de la partie est évaluée vite (`QUICK_SEARCH`). Les coups du joueur qui perdent gros deviennent des candidats, revus en profondeur (`DEEP_SEARCH`, plusieurs variantes, plus le coup joué cherché seul) : `buildPuzzle` ne garde que ceux que la seconde passe confirme.
+- **Incrémental.** L'identifiant de chaque partie analysée est gardé ; une passe prend au plus 20 parties jamais vues, jouées après la plus ancienne partie connue. Une partie n'est notée qu'une fois ses problèmes enregistrés : une annulation ne perd que les parties en cours.
+- **Moteur.** `engine.ts` importe les deux fichiers de Stockfish.js avec `?url` : Vite les copie tels quels dans `assets/`, la page les charge dans un `Worker`. Rien du moteur n'entre dans le JavaScript de la page (GPL-3.0, voir `THIRD-PARTY-NOTICES.md`).
+- **Stockage.** IndexedDB `echecs` : magasins `games` et `puzzles`, clés `pseudo|identifiant`. `localStorage` : le pseudo (`echecs.username.v1`) et le nombre de problèmes réussis (`echecs.solved.v1`, lu par l'accueil). Rien ne part vers un serveur du site.
+- **CSP.** La page a besoin de `connect-src https://api.chess.com` et de `script-src 'wasm-unsafe-eval'` (compilation du moteur). Le Worker est chargé depuis `/assets/` : `script-src 'self'` le couvre.

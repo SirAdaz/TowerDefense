@@ -6,6 +6,7 @@ Quelques petits jeux dans le navigateur, à lancer en un clic : solo, hors ligne
 | ------------- | ----------------- | ----------------------------------------------------------------------------------------- |
 | Tower defense | `/tower-defense/` | Un chemin, une seule tourelle à améliorer (dégâts, portée, cadence), des vagues sans fin. |
 | Nuit blanche  | `/nuit-blanche/`  | Survie à vagues : une luciole qui suit la souris et tire seule, dix minutes à tenir.      |
+| Échecs        | `/echecs/`        | Vos parties chess.com analysées dans le navigateur : chaque gaffe devient un problème.    |
 
 ## Lancer
 
@@ -29,10 +30,17 @@ Cliquez une case libre pour poser une tourelle, cliquez une tourelle pour monter
 
 La luciole suit la souris et tire toute seule. Ramassez les éclats laissés par les ombres : à chaque niveau, choisissez une amélioration parmi trois (clic, ou touches 1, 2, 3). À 10:00 le boss arrive ; le battre gagne la nuit. Échap ou P : pause. Les pièces gagnées à chaque partie débloquent, au menu, de nouvelles cartes pour le tirage.
 
+## S'entraîner aux échecs
+
+Donnez votre pseudo chess.com : la page lit vos dernières parties (bullet, blitz, rapide) sur l'API publique du site et les analyse sur votre appareil avec Stockfish. Chaque gaffe devient un problème : trouvez le meilleur coup en glissant la pièce, ou en cliquant la pièce puis sa case. Un problème raté revient le lendemain, un problème réussi dans 3, 7, 21 puis 60 jours. Le pseudo, les analyses et la progression restent dans le navigateur.
+
+Logiciels tiers et licences (Stockfish est sous GPL-3.0) : [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 ## Documentation
 
 - [docs/README.md](docs/README.md) : index et état des phases.
 - [docs/product/SPECS.md](docs/product/SPECS.md) : règles et chiffres d'équilibrage du tower defense.
 - [docs/product/SPECS-NUIT-BLANCHE.md](docs/product/SPECS-NUIT-BLANCHE.md) : règles et chiffres de Nuit blanche.
+- [docs/product/SPECS-ECHECS.md](docs/product/SPECS-ECHECS.md) : seuils de gaffe, révision espacée et limites de la page Échecs.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) : pages, découpage logique / rendu / interface.
 - [docs/DECISIONS.md](docs/DECISIONS.md) : décisions datées (dont l'exception de stack).
