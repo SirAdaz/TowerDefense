@@ -1,7 +1,7 @@
 import { requireElement, setText } from "../../shared/dom.ts";
 import { finalScore } from "../game/engine.ts";
 import type { GameState } from "../game/types.ts";
-import { formatNumber, formatTime } from "./texts.ts";
+import { formatNumber, formatTime } from "./format.ts";
 
 export interface Hud {
   readonly pauseButton: HTMLButtonElement;

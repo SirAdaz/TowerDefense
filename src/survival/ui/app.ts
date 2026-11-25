@@ -2,15 +2,17 @@ import { requireElement, setText } from "../../shared/dom.ts";
 import type { KeyValueStore } from "../../shared/storage.ts";
 import { ARENA_HEIGHT, ARENA_WIDTH, STEP_SECONDS } from "../game/balance.ts";
 import { abandon, step } from "../game/engine.ts";
-import { applyRun, buyUnlock, loadProfile, saveProfile, summarizeRun, type Profile } from "../game/profile.ts";
+import { applyRun, buyUnlock, loadProfile, saveProfile, type Profile } from "../game/profile.ts";
 import { createGame } from "../game/state.ts";
+import { summarizeRun } from "../game/summary.ts";
 import type { GameState, PlayerInput, UpgradeId } from "../game/types.ts";
 import { chooseUpgrade } from "../game/upgrades.ts";
 import { createRenderer, type Renderer } from "../render/renderer.ts";
 import { createDialogs, type Dialogs } from "./dialogs.ts";
 import { createHud, type Hud } from "./hud.ts";
 import { createMenu, type Menu } from "./menu.ts";
-import { describeChoice, formatNumber } from "./texts.ts";
+import { formatNumber } from "./format.ts";
+import { describeChoice } from "./texts.ts";
 
 /** Tout ce que l'interface tient en main. `state` est `null` au menu. */
 export interface App {

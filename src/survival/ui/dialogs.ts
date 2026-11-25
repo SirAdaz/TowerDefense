@@ -2,7 +2,8 @@ import { requireElement, setText } from "../../shared/dom.ts";
 import { PASSIVES, PASSIVE_IDS, UNLOCKS, WEAPONS, WEAPON_IDS } from "../game/balance.ts";
 import type { Profile, RunSummary } from "../game/profile.ts";
 import type { GameState } from "../game/types.ts";
-import { describeChoice, formatCoins, formatNumber, formatTime } from "./texts.ts";
+import { formatCoins, formatNumber, formatTime } from "./format.ts";
+import { describeChoice } from "./texts.ts";
 
 export interface DialogHandlers {
   readonly onChoose: (choiceIndex: number) => void;

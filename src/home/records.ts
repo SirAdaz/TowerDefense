@@ -1,6 +1,6 @@
 import type { KeyValueStore } from "../shared/storage.ts";
 import { loadProfile } from "../survival/game/profile.ts";
-import { describeRecord } from "../survival/ui/texts.ts";
+import { describeRecord } from "../survival/ui/format.ts";
 import { readRecord } from "../tower-defense/game/save.ts";
 
 /** Record personnel d'un jeu, tel qu'il s'affiche sur sa carte de l'accueil. */

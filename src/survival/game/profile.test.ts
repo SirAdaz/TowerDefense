@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KeyValueStore } from "../../shared/storage.ts";
-import { describeChoice, describeRecord, describeUpgrade, formatCoins, formatTime } from "../ui/texts.ts";
+import { describeRecord, formatCoins, formatTime } from "../ui/format.ts";
+import { describeChoice, describeUpgrade } from "../ui/texts.ts";
 import { UNLOCKS } from "./balance.ts";
 import {
   applyRun,
@@ -10,11 +11,11 @@ import {
   parseProfile,
   PROFILE_KEY,
   saveProfile,
-  summarizeRun,
   unlockCost,
   type Profile,
 } from "./profile.ts";
 import { createGame } from "./state.ts";
+import { summarizeRun } from "./summary.ts";
 
 function memoryStore(entries: Record<string, string> = {}): KeyValueStore {
   const values = new Map(Object.entries(entries));

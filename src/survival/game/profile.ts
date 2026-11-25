@@ -1,7 +1,6 @@
 import type { KeyValueStore } from "../../shared/storage.ts";
 import { UNLOCKS } from "./balance.ts";
-import { coinsEarned, finalScore, survivedSeconds } from "./engine.ts";
-import type { GameState, UpgradeId } from "./types.ts";
+import type { UpgradeId } from "./types.ts";
 
 /** Ce qui est gardé d'une partie à l'autre : le record, les pièces et les déblocages. Jamais de bonus de puissance. */
 export interface Profile {
@@ -79,20 +78,6 @@ export function saveProfile(store: KeyValueStore, profile: Profile): boolean {
   } catch {
     return false;
   }
-}
-
-/** Bilan de la partie, comparé au record du profil. */
-export function summarizeRun(state: GameState, profile: Profile): RunSummary {
-  const score = finalScore(state);
-  return {
-    score,
-    seconds: survivedSeconds(state),
-    hasWon: state.isBossDefeated,
-    kills: state.kills,
-    level: state.player.level,
-    coins: coinsEarned(state),
-    isNewRecord: score > profile.bestScore,
-  };
 }
 
 /** Profil après une partie : pièces ajoutées, record et meilleur temps mis à jour. */

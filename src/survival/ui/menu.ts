@@ -2,7 +2,8 @@ import { requireElement, setAttribute, setText } from "../../shared/dom.ts";
 import { UNLOCKS } from "../game/balance.ts";
 import { unlockCost, type Profile } from "../game/profile.ts";
 import type { UpgradeId } from "../game/types.ts";
-import { describeRecord, describeUpgrade, formatCoins } from "./texts.ts";
+import { describeRecord, formatCoins } from "./format.ts";
+import { describeUpgrade } from "./texts.ts";
 
 export interface MenuHandlers {
   readonly onPlay: () => void;

@@ -11,7 +11,7 @@ Site statique à plusieurs pages (Vite multi-page, TypeScript) : l'accueil à la
 | `/nuit-blanche/`   | `nuit-blanche/index.html`  | `src/survival/`      |
 
 - Les pages sont déclarées dans `vite.config.ts` (`PAGES`). `base: "/"` : le site est servi à la racine de son domaine, les assets (`/assets/…`) sont communs.
-- L'accueil est du HTML statique : une carte par jeu. `src/home/records.ts` lit le record de chaque jeu dans le `localStorage`, à la clé où le jeu l'écrit, et l'affiche sur sa carte.
+- L'accueil est du HTML statique : une carte par jeu. `src/home/records.ts` lit le record de chaque jeu dans le `localStorage`, à la clé où le jeu l'écrit, et l'affiche sur sa carte. Il n'importe que le strict nécessaire (`profile.ts`, `ui/format.ts`) : l'accueil ne charge pas le code des jeux.
 - `src/shared/storage.ts` : l'interface `KeyValueStore` et son implémentation navigateur, communes à toutes les pages. `src/shared/dom.ts` : accès typé au gabarit HTML.
 - Chaque jeu porte un lien « ← Jeux » vers l'accueil et garde ses propres clés `localStorage` (même origine : rien n'est perdu d'une page à l'autre).
 
@@ -94,7 +94,7 @@ Canvas dimensionné sur sa taille affichée × `devicePixelRatio`. Le dessin se 
 | `gems.ts`        | Attraction et ramassage des éclats.                                                                      |
 | `upgrades.ts`    | Tirage des 3 cartes, application du choix.                                                               |
 | `engine.ts`      | `step(state, input)`, fin de partie, score, pièces.                                                      |
-| `profile.ts`     | Profil stocké (record, pièces, déblocages), validé à la lecture.                                         |
+| `profile.ts`     | Profil stocké (record, pièces, déblocages), validé à la lecture. `summary.ts` : bilan d'une partie finie. |
 
 ### Simulation
 
