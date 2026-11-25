@@ -29,7 +29,7 @@ describe("username kept in the browser", () => {
   it("is empty at first, then read back once saved", () => {
     const store = memoryStore();
     expect(loadUsername(store)).toBeNull();
-    saveUsername(store, TEST_USER);
+    expect(saveUsername(store, TEST_USER)).toBe(true);
     expect(loadUsername(store)).toBe(TEST_USER);
   });
 
@@ -46,6 +46,29 @@ describe("username kept in the browser", () => {
     forgetUsername(store);
     expect(loadUsername(store)).toBeNull();
     expect(store.getItem(SOLVED_COUNT_KEY)).toBeNull();
+  });
+});
+
+describe("a browser that refuses storage", () => {
+  const refusingStore: KeyValueStore = {
+    getItem: () => {
+      throw new Error("denied");
+    },
+    setItem: () => {
+      throw new Error("denied");
+    },
+    removeItem: () => {
+      throw new Error("denied");
+    },
+  };
+
+  it("never breaks the page", () => {
+    expect(loadUsername(refusingStore)).toBeNull();
+    expect(saveUsername(refusingStore, TEST_USER)).toBe(false);
+    expect(() => {
+      saveSolvedCount(refusingStore, 3);
+      forgetUsername(refusingStore);
+    }).not.toThrow();
   });
 });
 

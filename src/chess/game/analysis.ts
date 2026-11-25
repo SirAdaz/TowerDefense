@@ -27,6 +27,9 @@ export const NEAR_BEST_WIN_DROP = 3;
 /** Un mat plus long d'un coup que le plus court reste une bonne réponse. */
 const NEAR_BEST_MATE_EXTRA_MOVES = 1;
 
+/** Au-delà de trois coups qui se valent, la position n'a pas de solution nette : pas de problème. */
+export const MAX_SOLUTIONS = 3;
+
 const SOLUTION_LINE_MAX_PLIES = 6;
 
 export interface GameReview {
@@ -109,6 +112,27 @@ export function reviewGame(game: RawGame, parsed: ParsedGame, scores: readonly E
   return { analysed, candidates };
 }
 
+/**
+ * Fiche d'une partie qu'on ne peut pas analyser (PGN illisible, quelques coups seulement) : sans
+ * coup évalué, elle ne compte dans aucun bilan, mais elle est connue et ne sera pas redemandée.
+ */
+export function unusableGame(game: RawGame, username: string): AnalysedGame {
+  return {
+    id: game.id,
+    url: game.url,
+    username,
+    timeClass: game.timeClass,
+    endTime: game.endTime,
+    playerColor: game.playerColor,
+    result: game.result,
+    openingName: "",
+    eco: "",
+    accuracy: 0,
+    moves: [],
+    lostPhase: null,
+  };
+}
+
 function isNearBest(best: PlayerView, other: PlayerView): boolean {
   if (best.mate === "winning") {
     return other.mate === "winning" && other.mateMoves <= best.mateMoves + NEAR_BEST_MATE_EXTRA_MOVES;
@@ -139,21 +163,34 @@ function toPuzzleMove(fen: string, line: EngineLine): PuzzleMove | null {
   return san === undefined ? null : { uci: line.moveUci, san };
 }
 
+/** Recherche approfondie d'une position candidate : les meilleures variantes, et le coup joué évalué seul. */
+export interface CandidateSearch {
+  /** Variantes du moteur, la meilleure en premier (une de plus que `MAX_SOLUTIONS`). */
+  readonly lines: readonly EngineLine[];
+  /** Évaluation du coup de la partie, pour le camp au trait ; `null` si elle manque. */
+  readonly playedScore: EngineScore | null;
+}
+
+function isConfirmedBlunder(best: PlayerView, playedScore: EngineScore | null): boolean {
+  return playedScore === null || puzzleKind(best, toPlayerView(playedScore, true)) !== null;
+}
+
 /**
- * Transforme une position candidate en problème à partir des meilleures variantes du moteur (la
- * meilleure en premier). `null` quand la recherche approfondie range le coup joué parmi les bons :
- * la gaffe n'en était pas une, ou plusieurs coups se valent et le problème serait injuste.
+ * Transforme une position candidate en problème. `null` quand la recherche approfondie dément la
+ * première passe : le coup joué n'était pas si mauvais, il figure parmi les bons, ou trop de coups
+ * se valent pour qu'il y ait une solution à trouver.
  */
-export function buildPuzzle(game: AnalysedGame, candidate: PuzzleCandidate, lines: readonly EngineLine[]): Puzzle | null {
-  const bestLine = lines[0];
+export function buildPuzzle(game: AnalysedGame, candidate: PuzzleCandidate, search: CandidateSearch): Puzzle | null {
+  const bestLine = search.lines[0];
   if (bestLine === undefined) {
     return null;
   }
   const best = toPlayerView(bestLine.score, true);
-  const acceptedLines = lines.filter((line) => isNearBest(best, toPlayerView(line.score, true)));
+  const acceptedLines = search.lines.filter((line) => isNearBest(best, toPlayerView(line.score, true)));
   const solutions = acceptedLines.map((line) => toPuzzleMove(candidate.fen, line)).filter((move) => move !== null);
   const isPlayedMoveAccepted = solutions.some((solution) => solution.uci === candidate.playedUci);
-  if (solutions[0]?.uci !== bestLine.moveUci || isPlayedMoveAccepted) {
+  const hasClearSolution = solutions[0]?.uci === bestLine.moveUci && solutions.length <= MAX_SOLUTIONS;
+  if (!hasClearSolution || isPlayedMoveAccepted || !isConfirmedBlunder(best, search.playedScore)) {
     return null;
   }
   return {

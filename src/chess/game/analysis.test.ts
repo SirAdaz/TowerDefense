@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MATED_PGN, MISSED_MATE_PGN, TEST_USER, analysedGame, cp, mate, moveReview, rawGame } from "../../../tests/chessFixtures.ts";
-import { buildPuzzle, findLostPhase, lineToSan, reviewGame, terminalScore } from "./analysis.ts";
+import { buildPuzzle, findLostPhase, lineToSan, reviewGame, terminalScore, unusableGame } from "./analysis.ts";
 import { parseGame } from "./pgn.ts";
 import type { EngineLine, EngineScore, ParsedGame, PuzzleCandidate } from "./types.ts";
 
@@ -84,6 +84,13 @@ describe("reviewing a game", () => {
   });
 });
 
+describe("a game that cannot be analysed", () => {
+  it("is recorded without any reviewed move", () => {
+    const stub = unusableGame(rawGame({ pgn: "1. e4 *" }), TEST_USER);
+    expect(stub).toMatchObject({ id: "game-1", username: TEST_USER, timeClass: "blitz", moves: [], lostPhase: null });
+  });
+});
+
 describe("phase where a game is lost", () => {
   it("is the phase of the last move that turned a playable position into a losing one", () => {
     const moves = [
@@ -115,13 +122,11 @@ describe("building a puzzle", () => {
   };
   const mateInOne = { ...candidate, fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4", playedUci: "b1c3" };
 
+  const search = (lines: EngineLine[], playedScore: EngineScore | null = null) => ({ lines, playedScore });
+
   it("accepts the best move and the ones nearly as good, not the rest", () => {
-    const built = buildPuzzle(game, candidate, [
-      line("g7g6", cp(-30), ["g7g6", "h5f3", "g8f6"]),
-      line("d8e7", cp(-45)),
-      line("d7d6", cp(-400)),
-    ]);
-    expect(built).toMatchObject({
+    const lines = [line("g7g6", cp(-30), ["g7g6", "h5f3", "g8f6"]), line("d8e7", cp(-45)), line("d7d6", cp(-400))];
+    expect(buildPuzzle(game, candidate, search(lines, mate(-1)))).toMatchObject({
       id: "game-1:5",
       username: TEST_USER,
       fen: candidate.fen,
@@ -138,23 +143,30 @@ describe("building a puzzle", () => {
     });
   });
 
-  it("drops the puzzle when the deeper search finds the played move good enough", () => {
-    expect(buildPuzzle(game, candidate, [line("g7g6", cp(-30)), line("g8f6", cp(-35))])).toBeNull();
+  it("drops the puzzle when the deeper search ranks the played move among the good ones", () => {
+    expect(buildPuzzle(game, candidate, search([line("g7g6", cp(-30)), line("g8f6", cp(-35))]))).toBeNull();
+  });
+
+  it("drops the puzzle when the played move, searched alone, is not that bad after all", () => {
+    const lines = [line("g7g6", cp(-30)), line("d7d6", cp(-400))];
+    expect(buildPuzzle(game, candidate, search(lines, cp(-120)))).toBeNull();
+    expect(buildPuzzle(game, candidate, search(lines, cp(-320)))).not.toBeNull();
+  });
+
+  it("drops the puzzle when too many moves are equally good", () => {
+    const lines = [line("g7g6", cp(-30)), line("d8e7", cp(-32)), line("d8f6", cp(-34)), line("g8h6", cp(-36))];
+    expect(buildPuzzle(game, candidate, search(lines))).toBeNull();
   });
 
   it("only accepts mates when a mate exists, a move longer at most", () => {
-    const built = buildPuzzle(game, mateInOne, [
-      line("h5f7", mate(1)),
-      line("c4f7", mate(2)),
-      line("h5e5", mate(4)),
-      line("d2d3", cp(900)),
-    ]);
+    const lines = [line("h5f7", mate(1)), line("c4f7", mate(2)), line("h5e5", mate(4)), line("d2d3", cp(900))];
+    const built = buildPuzzle(game, mateInOne, search(lines, cp(60)));
     expect(built?.solutions.map((solution) => solution.san)).toEqual(["Qxf7#", "Bxf7+"]);
   });
 
   it("returns nothing without lines or with an impossible best move", () => {
-    expect(buildPuzzle(game, candidate, [])).toBeNull();
-    expect(buildPuzzle(game, candidate, [line("a1a8", cp(50)), line("g7g6", cp(40))])).toBeNull();
+    expect(buildPuzzle(game, candidate, search([]))).toBeNull();
+    expect(buildPuzzle(game, candidate, search([line("a1a8", cp(50)), line("g7g6", cp(40))]))).toBeNull();
   });
 });
 

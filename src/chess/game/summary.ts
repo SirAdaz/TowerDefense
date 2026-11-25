@@ -9,17 +9,36 @@ export const USERNAME_KEY = "echecs.username.v1";
 export const SOLVED_COUNT_KEY = "echecs.solved.v1";
 
 export function loadUsername(store: KeyValueStore): string | null {
-  const stored = store.getItem(USERNAME_KEY);
-  return stored === null ? null : normalizeUsername(stored);
+  try {
+    const stored = store.getItem(USERNAME_KEY);
+    return stored === null ? null : normalizeUsername(stored);
+  } catch {
+    return null;
+  }
 }
 
-export function saveUsername(store: KeyValueStore, username: string): void {
-  store.setItem(USERNAME_KEY, username);
+/** Une écriture refusée (quota, navigation privée) ne doit pas casser la page : elle est ignorée. */
+function tryWrite(write: () => void): boolean {
+  try {
+    write();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Renvoie faux si le navigateur a refusé de garder le pseudo. */
+export function saveUsername(store: KeyValueStore, username: string): boolean {
+  return tryWrite(() => {
+    store.setItem(USERNAME_KEY, username);
+  });
 }
 
 export function forgetUsername(store: KeyValueStore): void {
-  store.removeItem(USERNAME_KEY);
-  store.removeItem(SOLVED_COUNT_KEY);
+  tryWrite(() => {
+    store.removeItem(USERNAME_KEY);
+    store.removeItem(SOLVED_COUNT_KEY);
+  });
 }
 
 /** Un problème compte comme réussi dès qu'il a été trouvé une fois sans indice. */
@@ -28,7 +47,9 @@ export function countSolved(puzzles: readonly Puzzle[]): number {
 }
 
 export function saveSolvedCount(store: KeyValueStore, solvedCount: number): void {
-  store.setItem(SOLVED_COUNT_KEY, String(solvedCount));
+  tryWrite(() => {
+    store.setItem(SOLVED_COUNT_KEY, String(solvedCount));
+  });
 }
 
 /** Ligne affichée sur la carte de l'accueil, ou `null` tant qu'aucun problème n'est réussi. */
