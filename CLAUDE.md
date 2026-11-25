@@ -2,7 +2,7 @@
 
 # TowerDefense
 
-Petits jeux solo dans le navigateur, joués à la souris sur ordinateur : une page d'accueil (`/`) et un dossier par jeu (`/tower-defense/`). Vite 8 multi-page + TypeScript 6 strict + Canvas 2D, site statique (`docs/DECISIONS.md`). Node 24 dans Docker uniquement.
+Petits jeux solo dans le navigateur, joués à la souris sur ordinateur : une page d'accueil (`/`) et un dossier par jeu (`/tower-defense/`, `/nuit-blanche/` dont le code est dans `src/survival/`). Vite 8 multi-page + TypeScript 6 strict + Canvas 2D, site statique (`docs/DECISIONS.md`). Node 24 dans Docker uniquement.
 
 ## Commandes
 
@@ -23,6 +23,8 @@ Petits jeux solo dans le navigateur, joués à la souris sur ordinateur : une pa
 ## Pièges
 
 - Nouveau jeu = une page `<dossier>/index.html`, son entrée dans `vite.config.ts` (`PAGES`), son bloc `location` dans `docker/nginx.conf`, sa carte dans `index.html` et son record dans `src/home/records.ts`.
+- Nuit blanche : la simulation (`src/survival/game/`) ne crée aucun objet par pas (réserves de taille fixe, grille de voisinage) ; garder cette règle dans `step` et tout ce qu'il appelle.
+- `window.nuitBlancheTest` (vitesse du temps, état) n'existe que sur le serveur Vite (`import.meta.env.DEV`) : jamais dans le build.
 - La CSP de `docker/security-headers.conf` est recopiée par le serveur de production : ne pas la changer sans le signaler.
 - Les imports internes portent l'extension `.ts` (`allowImportingTsExtensions`) : un script TypeScript tourne directement avec Node 24.
 - `assetsInlineLimit: 0` : la police doit rester un fichier, la CSP de l'image nginx refuse les polices en `data:`.

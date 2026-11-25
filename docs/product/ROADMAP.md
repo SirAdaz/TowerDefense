@@ -13,6 +13,14 @@
 
 Détail des règles et chiffres : [SPECS.md](SPECS.md).
 
+## Nuit blanche (deuxième jeu)
+
+- Survie à vagues à la souris seule, tir automatique, nuit de 10 minutes et boss final.
+- 5 armes, 8 passifs, 4 ennemis + élites, 1 amélioration parmi 3 à chaque niveau.
+- Record (score, temps tenu), pièces et déblocages de cartes entre les parties, sans bonus permanent.
+
+Détail : [SPECS-NUIT-BLANCHE.md](SPECS-NUIT-BLANCHE.md).
+
 ## V2
 
 - Plusieurs cartes.

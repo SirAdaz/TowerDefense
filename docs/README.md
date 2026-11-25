@@ -9,5 +9,6 @@
 - [x] Build : V1 jouable
 - [x] Mise en ligne
 - [x] Page d'accueil, un dossier par jeu
+- [x] Deuxième jeu : Nuit blanche ([product/SPECS-NUIT-BLANCHE.md](product/SPECS-NUIT-BLANCHE.md))
 
 Décisions datées : [DECISIONS.md](DECISIONS.md).
