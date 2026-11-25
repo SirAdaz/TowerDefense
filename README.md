@@ -32,7 +32,7 @@ La luciole suit la souris et tire toute seule. Ramassez les éclats laissés par
 
 ## S'entraîner aux échecs
 
-Donnez votre pseudo chess.com : la page lit vos dernières parties (bullet, blitz, rapide) sur l'API publique du site et les analyse sur votre appareil avec Stockfish. Chaque gaffe devient un problème : trouvez le meilleur coup en glissant la pièce, ou en cliquant la pièce puis sa case. Un problème raté revient le lendemain, un problème réussi dans 3, 7, 21 puis 60 jours. Le pseudo, les analyses et la progression restent dans le navigateur.
+Donnez votre pseudo chess.com : la page lit vos dernières parties (bullet, blitz, rapide) sur l'API publique du site et les analyse sur votre appareil avec Stockfish. Chaque gaffe devient un problème : trouvez le meilleur coup en glissant la pièce, ou en cliquant la pièce puis sa case. Un problème raté revient le lendemain, un problème réussi dans 3, 7, 21 puis 60 jours. Un bilan par cadence (bullet, blitz, rapide) donne la précision, les gaffes par partie, les ouvertures, la phase où les parties se perdent et les erreurs en fin de pendule. Le pseudo, les analyses et la progression restent dans le navigateur.
 
 Logiciels tiers et licences (Stockfish est sous GPL-3.0) : [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 

@@ -47,6 +47,15 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - L'échéance est avancée de 8 heures (`DUE_SLACK_MS`) : « demain » marche dès le matin.
 - Ordre d'une séance : révisions échues (la plus en retard d'abord), puis nouveaux problèmes, des parties les plus récentes aux plus anciennes.
 
+## Bilan par cadence (`report.ts`)
+
+- Un bilan par cadence (bullet, blitz, rapide), jamais additionnés. La cadence la plus jouée s'ouvre d'abord.
+- Précision moyenne : moyenne des précisions des parties. Gaffes et erreurs : nombre moyen par partie.
+- Ouvertures : nom de famille tiré de l'adresse `ECOUrl` du PGN (« Sicilian Defense »), les 6 plus jouées (`MAX_OPENINGS`) avec leur part de victoires.
+- Défaites par phase où la partie a basculé (voir Analyse).
+- Fin de pendule : gaffes et erreurs pour 100 coups joués avec moins de 10 secondes (`LOW_CLOCK_SECONDS`, pendule notée après le coup), comparées au reste des coups.
+- Les parties sans coup évalué (illisibles, trop courtes) ne comptent pas.
+
 ## Limites connues
 
 - Moteur allégé à faible profondeur : assez pour les gaffes, pas pour juger une position fine. La précision affichée n'est pas celle de chess.com.
