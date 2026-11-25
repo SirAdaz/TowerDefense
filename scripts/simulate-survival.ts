@@ -10,7 +10,7 @@ const PROFILES: ReadonlyArray<readonly [string, SurvivalBotProfile, boolean]> = 
   ["esquive, passifs d'abord", { moves: "dodge", prefers: "passive" }, false],
   ["esquive, armes, tout débloqué", { moves: "dodge", prefers: "weapon" }, true],
 ];
-const SEED_COUNT = Number(process.argv[2] ?? 30);
+const SEED_COUNT = 30;
 const SEEDS = Array.from({ length: SEED_COUNT }, (_, index) => index + 1);
 const ALL_UNLOCKS = UNLOCKS.map((unlock) => unlock.id);
 
