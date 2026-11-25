@@ -13,6 +13,7 @@ export const MAX_ENEMIES = 360;
 export const MAX_PROJECTILES = 200;
 export const MAX_GEMS = 300;
 export const MAX_EFFECTS = 64;
+export const MAX_HIT_MARKS = 48;
 
 export const PLAYER = {
   radius: 12,

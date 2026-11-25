@@ -9,6 +9,7 @@ Jeu de survie à vagues : une luciole, des ombres qui arrivent de partout en nom
 - Les armes tirent seules. Le joueur ne clique que dans les menus.
 - Si le joueur tient 10:00, alors le boss entre. Si le boss tombe, la partie est **gagnée** ; si la vie du joueur tombe à 0, elle est **perdue**. Dans les deux cas l'écran de score s'affiche.
 - Si un ennemi touche le joueur, alors il lui retire ses dégâts et le joueur est invulnérable 0,5 s.
+- Si un tir touche un ennemi (3 dégâts ou plus), alors l'ennemi flashe en blanc, un éclat bref marque l'impact et le chiffre des dégâts s'élève au-dessus de lui pendant 0,6 s (en jaune et plus gros si le coup le détruit). Les 48 derniers coups s'affichent au plus. Chaque ennemi a un contour clair.
 - La simulation avance par pas fixes de 1/60 s, avec un hasard à graine : même graine et mêmes gestes = même nuit.
 
 ## Expérience et améliorations
@@ -77,7 +78,7 @@ Vie à la minute M = vie de base × (1 + 0,32 × R(M)). Le boss a une vie fixe. 
 
 - Pause : Échap, P ou le bouton « Pause ». La partie se met seule en pause quand l'onglet est caché ou que la fenêtre perd le focus. L'écran de pause rappelle les armes et passifs en main.
 - Rien n'est sauvegardé en cours de partie (10 minutes au plus) : seul le profil l'est (clé `nuitblanche.profile.v1`), à la fin de chaque partie et à chaque déblocage.
-- Mouvement réduit (`prefers-reduced-motion`) : pas de secousse d'écran, pas d'éclat blanc sur les ennemis touchés, pas de clignotement du joueur, la foudre garde seulement son cercle d'impact.
+- Mouvement réduit (`prefers-reduced-motion`) : pas de secousse d'écran, pas d'éclat blanc sur les ennemis touchés ni au point d'impact (les chiffres de dégâts restent, immobiles), pas de clignotement du joueur, la foudre garde seulement son cercle d'impact.
 - Clavier : Tab et Entrée dans tous les menus, 1 / 2 / 3 pour choisir une carte. Le jeu lui-même se joue à la souris.
 
 ## Équilibrage (joueur automatique, `npm run simulate:survival`)

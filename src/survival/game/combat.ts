@@ -5,7 +5,14 @@ import type { Effect, Enemy, GameState } from "./types.ts";
 
 /** Durée d'affichage d'un effet (anneau, éclair). */
 export const EFFECT_SECONDS = 0.35;
-const FLASH_SECONDS = 0.09;
+/** Durée de vie d'un chiffre de dégâts. */
+export const HIT_MARK_SECONDS = 0.6;
+/**
+ * Plus petit coup qui affiche son chiffre : le halo blesse par fractions à chaque pas, ses dégâts
+ * continus ne couvrent pas l'arène de « 0 ».
+ */
+export const HIT_MARK_MIN_DAMAGE = 3;
+const FLASH_SECONDS = 0.12;
 /** Les éclats tombent toujours dans l'arène, même si l'ennemi meurt sur son bord. */
 const GEM_INSET = 14;
 
@@ -36,6 +43,27 @@ export function updateEffects(state: GameState, stepSeconds: number): void {
     effect.age += stepSeconds;
     effect.isActive = effect.age < EFFECT_SECONDS;
   }
+  for (const mark of state.hitMarks) {
+    if (mark.isActive) {
+      mark.age += stepSeconds;
+      mark.isActive = mark.age < HIT_MARK_SECONDS;
+    }
+  }
+}
+
+/** Pose un chiffre de dégâts au-dessus de l'ennemi, à la place du plus ancien si la réserve est pleine. */
+function markHit(state: GameState, enemy: Enemy, amount: number): void {
+  const mark = state.hitMarks[state.hitMarkCursor];
+  if (mark === undefined || amount < HIT_MARK_MIN_DAMAGE) {
+    return;
+  }
+  state.hitMarkCursor = (state.hitMarkCursor + 1) % state.hitMarks.length;
+  mark.isActive = true;
+  mark.x = enemy.x;
+  mark.y = enemy.y - enemy.radius;
+  mark.amount = amount;
+  mark.age = 0;
+  mark.isKill = enemy.hp <= 0;
 }
 
 /**
@@ -81,6 +109,7 @@ function killEnemy(state: GameState, enemy: Enemy): void {
 export function damageEnemy(state: GameState, enemy: Enemy, amount: number): void {
   enemy.hp -= amount;
   enemy.flashTimer = FLASH_SECONDS;
+  markHit(state, enemy, amount);
   if (enemy.hp <= 0) {
     killEnemy(state, enemy);
   }

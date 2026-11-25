@@ -5,6 +5,7 @@ import {
   MAX_EFFECTS,
   MAX_ENEMIES,
   MAX_GEMS,
+  MAX_HIT_MARKS,
   MAX_PROJECTILES,
   PASSIVE_IDS,
   PLAYER,
@@ -13,7 +14,18 @@ import {
   XP_BASE,
 } from "./balance.ts";
 import { GRID_CELL_COUNT } from "./spatial.ts";
-import type { Effect, Enemy, GameState, Gem, PassiveId, Projectile, UpgradeId, WeaponId, WeaponState } from "./types.ts";
+import type {
+  Effect,
+  Enemy,
+  GameState,
+  Gem,
+  HitMark,
+  PassiveId,
+  Projectile,
+  UpgradeId,
+  WeaponId,
+  WeaponState,
+} from "./types.ts";
 
 /** Mémoire d'un projectile : assez pour la poignée d'ennemis qu'il chevauche au même instant. */
 const RECENT_HITS = 8;
@@ -66,6 +78,10 @@ function createEffect(): Effect {
   return { isActive: false, kind: "burst", x: 0, y: 0, radius: 0, age: 0 };
 }
 
+function createHitMark(): HitMark {
+  return { isActive: false, x: 0, y: 0, amount: 0, age: 0, isKill: false };
+}
+
 function createWeapons(): Record<WeaponId, WeaponState> {
   const entries = WEAPON_IDS.map((id): [WeaponId, WeaponState] => [id, { level: 0, cooldown: 0, angle: 0, effectAge: 9 }]);
   const weapons = Object.fromEntries(entries) as Record<WeaponId, WeaponState>;
@@ -100,6 +116,8 @@ export function createGame(seed: number, unlocked: readonly UpgradeId[] = []): G
     projectiles: Array.from({ length: MAX_PROJECTILES }, createProjectile),
     gems: Array.from({ length: MAX_GEMS }, createGem),
     effects: Array.from({ length: MAX_EFFECTS }, createEffect),
+    hitMarks: Array.from({ length: MAX_HIT_MARKS }, createHitMark),
+    hitMarkCursor: 0,
     grid: {
       heads: new Int16Array(GRID_CELL_COUNT),
       next: new Int16Array(MAX_ENEMIES),

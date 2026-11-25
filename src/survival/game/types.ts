@@ -71,6 +71,20 @@ export interface Effect {
   age: number;
 }
 
+/**
+ * Chiffre de dégâts qui s'élève au-dessus d'un ennemi touché, avec un éclat bref au point d'impact.
+ * Sans effet sur les règles : il dit seulement au joueur que ses tirs portent.
+ */
+export interface HitMark {
+  isActive: boolean;
+  x: number;
+  y: number;
+  amount: number;
+  age: number;
+  /** Le coup a détruit l'ennemi (chiffre plus marqué). */
+  isKill: boolean;
+}
+
 export interface Player {
   x: number;
   y: number;
@@ -140,6 +154,9 @@ export interface GameState {
   projectiles: Projectile[];
   gems: Gem[];
   effects: Effect[];
+  hitMarks: HitMark[];
+  /** Prochaine place de `hitMarks` à réutiliser : la réserve tourne, le coup le plus récent s'affiche toujours. */
+  hitMarkCursor: number;
   grid: SpatialGrid;
   enemyCount: number;
   /** Ennemis « dus » par le rythme d'apparition, pas encore entrés. */

@@ -79,7 +79,7 @@ describe("step", () => {
 
   it("never holds more objects than its pools, without creating any", () => {
     const state = createGame(3);
-    const pools = [state.enemies, state.projectiles, state.gems, state.effects];
+    const pools = [state.enemies, state.projectiles, state.gems, state.effects, state.hitMarks];
     const firstObjects = pools.map((pool) => pool[0]);
     state.player.hp = 1e9;
     state.stats.maxHp = 1e9;
