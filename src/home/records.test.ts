@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KeyValueStore } from "../shared/storage.ts";
+import { PROFILE_KEY } from "../survival/game/profile.ts";
 import { RECORD_KEY } from "../tower-defense/game/save.ts";
 import { GAME_RECORDS } from "./records.ts";
 
@@ -33,7 +34,15 @@ describe("records shown on the home page", () => {
     expect(describeRecord("tower-defense", storeWith({ [RECORD_KEY]: "17" }))).toBe("Record : vague 17");
   });
 
+  it("reads the survival best score and time from the profile the game writes", () => {
+    expect(describeRecord("nuit-blanche", storeWith({}))).toBeNull();
+    const profile = JSON.stringify({ bestScore: 12340, bestSeconds: 252, hasWon: false, coins: 3, unlocked: [] });
+    const line = describeRecord("nuit-blanche", storeWith({ [PROFILE_KEY]: profile }));
+    expect(line?.replace(/\s/g, " ")).toBe("Record : 12 340 points · tenu 4:12");
+  });
+
   it("ignores a corrupted record", () => {
+    expect(describeRecord("nuit-blanche", storeWith({ [PROFILE_KEY]: "{oops" }))).toBeNull();
     expect(describeRecord("tower-defense", storeWith({ [RECORD_KEY]: "abc" }))).toBeNull();
   });
 });

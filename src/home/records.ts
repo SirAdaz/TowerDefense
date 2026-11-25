@@ -1,4 +1,6 @@
 import type { KeyValueStore } from "../shared/storage.ts";
+import { loadProfile } from "../survival/game/profile.ts";
+import { describeRecord } from "../survival/ui/format.ts";
 import { readRecord } from "../tower-defense/game/save.ts";
 
 /** Record personnel d'un jeu, tel qu'il s'affiche sur sa carte de l'accueil. */
@@ -15,4 +17,7 @@ function describeTowerDefense(store: KeyValueStore): string | null {
 }
 
 /** Un lecteur par jeu : l'accueil lit les records là où chaque jeu les écrit, sans les recopier. */
-export const GAME_RECORDS: readonly GameRecord[] = [{ gameId: "tower-defense", describe: describeTowerDefense }];
+export const GAME_RECORDS: readonly GameRecord[] = [
+  { gameId: "tower-defense", describe: describeTowerDefense },
+  { gameId: "nuit-blanche", describe: (store) => describeRecord(loadProfile(store)) },
+];
