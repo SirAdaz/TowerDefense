@@ -120,9 +120,9 @@ Pas de canvas ni de boucle de jeu : une page d'entraînement. Trois dossiers, du
 
 | Dossier | Rôle |
 | ------- | ---- |
-| `game/` | Logique pure, testée (mêmes seuils de couverture) : lecture des réponses de l'API (`chesscom.ts`), des PGN et des pendules (`pgn.ts`), des lignes UCI (`uci.ts`), évaluation et qualité d'un coup (`evaluation.ts`), revue d'une partie et construction des problèmes (`analysis.ts`), révision espacée (`schedule.ts`), notation française et noms des cases (`notation.ts`), pseudo et compteur lus par l'accueil (`summary.ts`). |
+| `game/` | Logique pure, testée (mêmes seuils de couverture) : lecture des réponses de l'API (`chesscom.ts`), des PGN et des pendules (`pgn.ts`), des lignes UCI (`uci.ts`), évaluation et qualité d'un coup (`evaluation.ts`), revue d'une partie et construction des problèmes (`analysis.ts`), révision espacée (`schedule.ts`), bilan par cadence (`report.ts`), notation française et noms des cases (`notation.ts`), pseudo et compteur lus par l'accueil (`summary.ts`). |
 | `data/` | Ce qui touche l'extérieur : `chesscomApi.ts` (`fetch` vers `api.chess.com`, erreurs typées), `store.ts` (IndexedDB, repli en mémoire), `engine.ts` (Stockfish dans un Web Worker), `analyser.ts` (file de parties, plusieurs moteurs, progression, annulation). |
-| `ui/`   | `board.ts` (64 boutons, pièces en SVG), `boardInput.ts` (glisser, clic-clic, clavier), `puzzleView.ts` (un problème à la fois), `app.ts` (pseudo, analyse, messages). |
+| `ui/`   | `board.ts` (64 boutons, pièces en SVG), `boardInput.ts` (glisser, clic-clic, clavier), `puzzleView.ts` (un problème à la fois), `reportView.ts` (bilan d'une cadence), `app.ts` (pseudo, analyse, messages). |
 
 - **Analyse en deux passes.** Chaque position de la partie est évaluée vite (`QUICK_SEARCH`). Les coups du joueur qui perdent gros deviennent des candidats, revus en profondeur (`DEEP_SEARCH`, plusieurs variantes, plus le coup joué cherché seul) : `buildPuzzle` ne garde que ceux que la seconde passe confirme.
 - **Incrémental.** L'identifiant de chaque partie analysée est gardé ; une passe prend au plus 20 parties jamais vues, jouées après la plus ancienne partie connue. Une partie n'est notée qu'une fois ses problèmes enregistrés : une annulation ne perd que les parties en cours.
