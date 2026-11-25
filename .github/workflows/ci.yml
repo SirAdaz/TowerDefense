@@ -39,7 +39,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Unit tests (seuils de couverture sur src/game)
+      - name: Unit tests (seuils de couverture sur src/*/game)
         run: npm run test
 
       - name: Build

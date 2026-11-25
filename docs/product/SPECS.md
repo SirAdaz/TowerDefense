@@ -1,6 +1,6 @@
 # Spécifications — V1 jouable
 
-Règles du jeu sous forme testable « si… alors… ». Les chiffres viennent de `src/game/balance.ts` (source de vérité) : changer un chiffre là-bas = mettre à jour cette page dans le même changement. Les tests de `src/game/*.test.ts` vérifient les règles, `tests/balance.test.ts` vérifie la courbe de difficulté.
+Règles du jeu sous forme testable « si… alors… ». Les chiffres viennent de `src/tower-defense/game/balance.ts` (source de vérité) : changer un chiffre là-bas = mettre à jour cette page dans le même changement. Les tests de `src/tower-defense/game/*.test.ts` vérifient les règles, `tests/balance.test.ts` vérifie la courbe de difficulté.
 
 ## Carte
 

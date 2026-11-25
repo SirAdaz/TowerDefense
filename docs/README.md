@@ -1,4 +1,4 @@
-# Documentation — Tower defense
+# Documentation
 
 - [x] Idée : [IDEA.md](IDEA.md)
 - [x] Validation légère : [VALIDATION.md](VALIDATION.md)
@@ -7,6 +7,7 @@
 - [x] Architecture : [ARCHITECTURE.md](ARCHITECTURE.md)
 - [x] Socle : dépôt, Docker, CI, qualité
 - [x] Build : V1 jouable
-- [ ] Mise en ligne
+- [x] Mise en ligne
+- [x] Page d'accueil, un dossier par jeu
 
 Décisions datées : [DECISIONS.md](DECISIONS.md).
