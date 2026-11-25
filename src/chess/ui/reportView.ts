@@ -145,29 +145,28 @@ function busiestTimeClass(games: readonly AnalysedGame[]): TimeClass {
 export function createReportView(): ReportView {
   const elements = collectElements();
   let games: readonly AnalysedGame[] = [];
-  let selected: TimeClass | null = null;
+  // Tant que le joueur n'a rien choisi, la cadence la plus jouée s'affiche (elle peut changer pendant l'analyse).
+  let chosen: TimeClass | null = null;
+
+  const renderSelected = () => {
+    const hasGames = games.some((game) => game.moves.length > 0);
+    elements.panel.hidden = !hasGames;
+    if (hasGames) {
+      render(elements, games, chosen ?? busiestTimeClass(games));
+    }
+  };
 
   elements.tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      selected = TIME_CLASSES.find((timeClass) => timeClass === tab.dataset["timeClass"]) ?? selected;
-      if (selected !== null) {
-        render(elements, games, selected);
-      }
+      chosen = TIME_CLASSES.find((timeClass) => timeClass === tab.dataset["timeClass"]) ?? chosen;
+      renderSelected();
     });
   });
 
   return {
     setGames: (nextGames) => {
       games = nextGames;
-      const hasGames = games.some((game) => game.moves.length > 0);
-      elements.panel.hidden = !hasGames;
-      // La cadence la plus jouée s'ouvre d'abord ; ensuite le choix du joueur est gardé.
-      if (selected === null && hasGames) {
-        selected = busiestTimeClass(games);
-      }
-      if (selected !== null && hasGames) {
-        render(elements, games, selected);
-      }
+      renderSelected();
     },
   };
 }
