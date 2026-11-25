@@ -139,6 +139,13 @@ async function runSync(app: App): Promise<void> {
     setText(app.elements.status, await analyseNewGames(app, username, abortController.signal));
   } catch (error) {
     setText(app.elements.status, describeFailure(error));
+    if (error instanceof ChessComError && error.reason === "not-found") {
+      // Pseudo inconnu : on ne le garde pas, le formulaire revient pour le corriger.
+      forgetUsername(app.keyValueStore);
+      app.username = null;
+      renderAccount(app);
+      app.elements.input.focus();
+    }
   } finally {
     app.abortController = null;
     setBusy(app, false);
