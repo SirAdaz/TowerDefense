@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Nuit blanche : une luciole, des ombres de plus en plus nombreuses, dix minutes à tenir jusqu'à l'aube." />
+    <meta name="color-scheme" content="dark" />
+    <title>Nuit blanche</title>
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <div class="game">
+      <canvas id="arena" aria-hidden="true"></canvas>
+
+      <header id="hud" class="hud" hidden>
+        <div class="hud-group">
+          <button id="pause" type="button" class="btn btn-small" aria-keyshortcuts="P Escape">Pause</button>
+          <label class="meter">
+            <span class="meter-label">Vie</span>
+            <progress id="hp" class="bar bar-hp" max="100" value="100"></progress>
+            <span id="hp-text" class="meter-value">100</span>
+          </label>
+        </div>
+        <p class="hud-time">
+          <span class="sr-only">Temps écoulé :</span>
+          <span id="time">0:00</span>
+          <span class="hud-goal" aria-hidden="true">/ 10:00</span>
+        </p>
+        <dl class="hud-group hud-stats">
+          <div>
+            <dt>Score</dt>
+            <dd id="score">0</dd>
+          </div>
+          <div>
+            <dt>Ombres</dt>
+            <dd id="kills">0</dd>
+          </div>
+        </dl>
+        <label class="meter meter-xp">
+          <span id="level" class="meter-label">Niveau 1</span>
+          <progress id="xp" class="bar bar-xp" max="1" value="0"></progress>
+        </label>
+      </header>
+
+      <main id="menu" class="menu">
+        <div class="menu-panel">
+          <div class="menu-intro">
+            <a class="back-link" href="/">← Jeux</a>
+            <h1>Nuit blanche</h1>
+            <p class="tagline">Tenez dix minutes, jusqu'à l'aube.</p>
+            <ul class="rules">
+              <li>Votre luciole suit la souris et tire toute seule.</li>
+              <li>Ramassez les éclats : à chaque niveau, choisissez une amélioration parmi trois.</li>
+              <li>À 10:00 l'Éclipse arrive. Battez-la pour voir le jour.</li>
+              <li>Pause : Échap, P ou le bouton en haut à gauche.</li>
+            </ul>
+            <button id="play" type="button" class="btn btn-primary btn-large">Jouer</button>
+            <p id="menu-record" class="menu-record" hidden></p>
+          </div>
+
+          <section class="unlocks" aria-labelledby="unlocks-title">
+            <div class="unlocks-head">
+              <h2 id="unlocks-title">Déblocages</h2>
+              <p id="menu-coins" class="coins"></p>
+            </div>
+            <p class="hint">Chaque partie rapporte des pièces. Un déblocage ajoute une carte au tirage : jamais de bonus permanent.</p>
+            <ul id="unlocks" class="unlock-list"></ul>
+          </section>
+        </div>
+      </main>
+
+      <dialog id="level-up" class="dialog dialog-wide" aria-labelledby="level-up-title">
+        <h2 id="level-up-title">Niveau 2</h2>
+        <p class="hint">Choisissez une amélioration (clic, ou touches 1, 2, 3).</p>
+        <div class="choices">
+          <button type="button" class="choice" data-choice="0"></button>
+          <button type="button" class="choice" data-choice="1"></button>
+          <button type="button" class="choice" data-choice="2"></button>
+        </div>
+      </dialog>
+
+      <dialog id="pause-dialog" class="dialog" aria-labelledby="pause-title">
+        <h2 id="pause-title">En pause</h2>
+        <p id="pause-build" class="hint"></p>
+        <div class="dialog-actions">
+          <button id="resume" type="button" class="btn btn-primary">Reprendre</button>
+          <button id="abandon" type="button" class="btn">Finir la partie</button>
+        </div>
+        <a class="back-link" href="/">← Jeux</a>
+      </dialog>
+
+      <dialog id="end-dialog" class="dialog" aria-labelledby="end-title">
+        <h2 id="end-title">La nuit a gagné</h2>
+        <p id="end-score" class="end-score"></p>
+        <p id="end-record" class="end-record"></p>
+        <dl class="end-stats">
+          <div>
+            <dt>Temps tenu</dt>
+            <dd id="end-time"></dd>
+          </div>
+          <div>
+            <dt>Ombres dissipées</dt>
+            <dd id="end-kills"></dd>
+          </div>
+          <div>
+            <dt>Niveau</dt>
+            <dd id="end-level"></dd>
+          </div>
+        </dl>
+        <p id="end-coins" class="coins"></p>
+        <p id="end-unlock-hint" class="hint" hidden>Vous avez de quoi débloquer une nouveauté : voyez le menu.</p>
+        <div class="dialog-actions">
+          <button id="replay" type="button" class="btn btn-primary">Rejouer</button>
+          <button id="to-menu" type="button" class="btn">Menu</button>
+        </div>
+      </dialog>
+
+      <p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+    </div>
+    <script type="module" src="/src/survival/main.ts"></script>
+  </body>
+</html>

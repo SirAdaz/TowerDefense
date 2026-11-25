@@ -1,0 +1,535 @@
+/* Nuit blanche : nuit violette, lumière chaude. Les couleurs du canvas sont dans render/theme.ts. */
+:root {
+  --night: #0b0912;
+  --panel: #191528;
+  --panel-raised: #241e38;
+  --line: #4a4168;
+  --ink: #f6f1e7;
+  --muted: #c3bcd2;
+  --glow: #ffe27a;
+  --glow-ink: #1c1604;
+  --mint: #7df0c0;
+  --rose: #ff8fa6;
+  --hud-top: 52px;
+  --hud-bottom: 34px;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--night);
+  color: var(--ink);
+}
+
+h1,
+h2,
+p,
+ul,
+dl,
+dd {
+  margin: 0;
+  padding: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 3px solid var(--glow);
+  outline-offset: 2px;
+}
+
+.game {
+  position: fixed;
+  inset: 0;
+}
+
+/* L'arène laisse une bande en haut et en bas : le bandeau ne cache jamais le jeu. */
+#arena {
+  position: absolute;
+  top: var(--hud-top);
+  left: 0;
+  width: 100%;
+  height: calc(100% - var(--hud-top) - var(--hud-bottom));
+  cursor: crosshair;
+}
+
+/* Boutons */
+.btn {
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--muted);
+}
+
+.btn-primary {
+  border-color: var(--glow);
+  background: var(--glow);
+  color: var(--glow-ink);
+}
+
+.btn-primary:hover {
+  border-color: #fff3c0;
+  background: #fff3c0;
+}
+
+.btn-large {
+  padding: 14px 44px;
+  font-size: 1.15rem;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.btn[aria-disabled="true"] {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.back-link {
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.coins {
+  color: var(--glow);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Bandeau de partie : posé sur l'arène, il ne capte pas la souris (sauf le bouton pause). */
+.hud {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  gap: 8px 16px;
+  padding: 10px 16px 8px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px #000;
+}
+
+.hud-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hud .btn {
+  pointer-events: auto;
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meter-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.meter-value {
+  min-width: 3ch;
+  font-weight: 600;
+}
+
+.bar {
+  width: 180px;
+  height: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0d0a18;
+  appearance: none;
+}
+
+.bar::-webkit-progress-bar {
+  background: #0d0a18;
+}
+
+.bar-hp::-webkit-progress-value {
+  background: var(--rose);
+}
+
+.bar-hp::-moz-progress-bar {
+  background: var(--rose);
+}
+
+.bar-xp::-webkit-progress-value {
+  background: var(--mint);
+}
+
+.bar-xp::-moz-progress-bar {
+  background: var(--mint);
+}
+
+.hud-time {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.hud-goal {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.hud-stats {
+  justify-content: flex-end;
+  gap: 24px;
+}
+
+.hud-stats div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.hud-stats dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hud-stats dd {
+  min-width: 3ch;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.meter-xp {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+
+.meter-xp .meter-label {
+  min-width: 10ch;
+  color: var(--ink);
+}
+
+.meter-xp .bar {
+  flex: 1;
+  width: auto;
+  height: 10px;
+}
+
+/* Menu */
+.menu {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+  background: rgb(11 9 18 / 82%);
+}
+
+.menu-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: 48px;
+  width: min(100%, 1040px);
+}
+
+.menu-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.menu h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 3.2rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.05;
+  color: var(--glow);
+}
+
+.tagline {
+  font-size: 1.15rem;
+}
+
+.rules {
+  display: grid;
+  gap: 4px;
+  padding-left: 1.2em;
+  color: var(--muted);
+}
+
+.menu-record {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.unlocks {
+  padding-top: 8px;
+}
+
+.unlocks-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.unlocks h2 {
+  font-size: 1.05rem;
+}
+
+.unlock-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  list-style: none;
+}
+
+.unlock {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.unlock-name {
+  font-weight: 600;
+}
+
+.unlock-kind {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.unlock-text {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.unlock .btn,
+.unlock-owned {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.unlock-owned {
+  color: var(--mint);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Fenêtres : choix d'amélioration, pause, fin de partie. */
+.dialog {
+  width: min(100% - 32px, 440px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.dialog[open] {
+  display: grid;
+  gap: 14px;
+}
+
+.dialog-wide {
+  width: min(100% - 32px, 860px);
+}
+
+.dialog::backdrop {
+  background: rgb(11 9 18 / 72%);
+}
+
+.dialog h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.9rem;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--glow);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.choice {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  gap: 6px;
+  min-height: 170px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice:hover {
+  border-color: var(--glow);
+}
+
+.choice-tag {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--mint);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.choice-key {
+  color: var(--muted);
+}
+
+.choice-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.choice-text {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.end-score {
+  font-size: 2.6rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.end-record {
+  font-weight: 600;
+}
+
+.end-stats {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  gap: 4px 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.end-stats dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.end-stats dd {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .bar {
+    width: 130px;
+  }
+
+  .choices {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 860px) {
+  .menu {
+    place-items: start center;
+  }
+
+  .menu-panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn,
+  .choice {
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+}

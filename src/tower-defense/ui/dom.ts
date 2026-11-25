@@ -1,28 +1,6 @@
-/** Élément du gabarit `index.html`, typé. Une erreur ici signale un gabarit et un code désaccordés. */
-export function requireElement<ElementType extends HTMLElement>(
-  id: string,
-  elementClass: new () => ElementType,
-): ElementType {
-  const element = document.getElementById(id);
-  if (!(element instanceof elementClass)) {
-    throw new Error(`Missing element #${id}`);
-  }
-  return element;
-}
+import { setAttribute } from "../../shared/dom.ts";
 
-/** Écrit un texte seulement s'il change : la page n'est pas retouchée 60 fois par seconde. */
-export function setText(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
-}
-
-/** Pose ou retire un attribut seulement s'il change. */
-export function setAttribute(element: HTMLElement, name: string, value: string): void {
-  if (element.getAttribute(name) !== value) {
-    element.setAttribute(name, value);
-  }
-}
+export { requireElement, setAttribute, setText } from "../../shared/dom.ts";
 
 /**
  * Bouton indisponible mais toujours atteignable au clavier : `aria-disabled` plutôt que `disabled`,

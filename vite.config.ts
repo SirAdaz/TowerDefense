@@ -4,6 +4,7 @@ import { defineConfig } from "vite";
 const PAGES = {
   home: "index.html",
   towerDefense: "tower-defense/index.html",
+  nuitBlanche: "nuit-blanche/index.html",
 };
 
 // Site statique à plusieurs pages, servi à la racine du domaine : `base: "/"` garde des chemins d'assets valables
