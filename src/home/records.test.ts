@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SOLVED_COUNT_KEY } from "../chess/game/summary.ts";
 import type { KeyValueStore } from "../shared/storage.ts";
 import { PROFILE_KEY } from "../survival/game/profile.ts";
 import { RECORD_KEY } from "../tower-defense/game/save.ts";
@@ -39,6 +40,11 @@ describe("records shown on the home page", () => {
     const profile = JSON.stringify({ bestScore: 12340, bestSeconds: 252, hasWon: false, coins: 3, unlocked: [] });
     const line = describeRecord("nuit-blanche", storeWith({ [PROFILE_KEY]: profile }));
     expect(line?.replace(/\s/g, " ")).toBe("Record : 12 340 points · tenu 4:12");
+  });
+
+  it("reads the number of chess puzzles solved from the key the page writes", () => {
+    expect(describeRecord("echecs", storeWith({}))).toBeNull();
+    expect(describeRecord("echecs", storeWith({ [SOLVED_COUNT_KEY]: "7" }))).toBe("7 problèmes réussis");
   });
 
   it("ignores a corrupted record", () => {
