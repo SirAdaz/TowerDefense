@@ -1,7 +1,7 @@
 import { ARENA_HEIGHT, ARENA_WIDTH } from "../game/balance.ts";
 import type { GameState, PlayerInput } from "../game/types.ts";
 import { drawEnemies, drawGems, drawPlayer } from "./actors.ts";
-import { drawAuras, drawEffects, drawProjectiles } from "./effects.ts";
+import { drawAuras, drawEffects, drawHitMarks, drawProjectiles } from "./effects.ts";
 import { THEME } from "./theme.ts";
 
 export interface Renderer {
@@ -91,6 +91,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         drawProjectiles(ctx, state);
         drawPlayer(ctx, state, isReducedMotion);
         drawEffects(ctx, state, isReducedMotion);
+        drawHitMarks(ctx, state, isReducedMotion);
       }
       ctx.restore();
     },

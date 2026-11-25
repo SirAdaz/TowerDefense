@@ -1,15 +1,23 @@
 import { HALO_ORB_RADIUS } from "../game/balance.ts";
-import { EFFECT_SECONDS } from "../game/combat.ts";
+import { EFFECT_SECONDS, HIT_MARK_SECONDS } from "../game/combat.ts";
 import type { GameState } from "../game/types.ts";
 import { weaponLevel } from "../game/weapons.ts";
-import { THEME } from "./theme.ts";
+import { FONT_FAMILY, THEME } from "./theme.ts";
 
 const FULL_TURN = Math.PI * 2;
 const PULSE_RING_SECONDS = 0.3;
 /** Longueur de la traînée d'un projectile, en secondes de trajet. */
-const TRAIL_SECONDS = 0.035;
+const TRAIL_SECONDS = 0.05;
+/** L'éclat d'impact ne dure que le début de la vie du chiffre. */
+const IMPACT_SECONDS = 0.12;
+const HIT_RISE = 34;
+const HIT_FONT = `800 24px ${FONT_FAMILY}`;
+const KILL_FONT = `800 30px ${FONT_FAMILY}`;
+/** Chiffres de 0 à 999 préparés une fois : écrire un dégât ne crée aucune chaîne par image. */
+const DAMAGE_LABELS = Array.from({ length: 1000 }, (_, value) => String(value));
 
-export function drawProjectiles(ctx: CanvasRenderingContext2D, state: GameState): void {
+/** Traînée des étincelles : un halo large et pâle sous un trait vif, pour les suivre de l'œil. */
+function drawSparks(ctx: CanvasRenderingContext2D, state: GameState): void {
   ctx.beginPath();
   for (const projectile of state.projectiles) {
     if (projectile.isActive && projectile.kind === "spark") {
@@ -17,10 +25,17 @@ export function drawProjectiles(ctx: CanvasRenderingContext2D, state: GameState)
       ctx.lineTo(projectile.x, projectile.y);
     }
   }
-  ctx.strokeStyle = THEME.spark;
-  ctx.lineWidth = 4;
   ctx.lineCap = "round";
+  ctx.strokeStyle = THEME.sparkGlow;
+  ctx.lineWidth = 11;
   ctx.stroke();
+  ctx.strokeStyle = THEME.spark;
+  ctx.lineWidth = 5;
+  ctx.stroke();
+}
+
+export function drawProjectiles(ctx: CanvasRenderingContext2D, state: GameState): void {
+  drawSparks(ctx, state);
 
   ctx.beginPath();
   for (const projectile of state.projectiles) {
@@ -114,4 +129,56 @@ export function drawEffects(ctx: CanvasRenderingContext2D, state: GameState, isR
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+}
+
+/** Éclats blancs aux points d'impact récents, en un seul tracé. */
+function drawImpacts(ctx: CanvasRenderingContext2D, state: GameState): void {
+  ctx.beginPath();
+  for (const mark of state.hitMarks) {
+    if (mark.isActive && mark.age < IMPACT_SECONDS) {
+      const radius = 5 + (mark.age / IMPACT_SECONDS) * 9;
+      ctx.moveTo(mark.x + radius, mark.y);
+      ctx.arc(mark.x, mark.y, radius, 0, FULL_TURN);
+    }
+  }
+  ctx.fillStyle = THEME.impact;
+  ctx.globalAlpha = 0.85;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+/** Les chiffres d'une catégorie (coups ou coups fatals), avec un liseré sombre pour rester lisibles. */
+function drawLabels(ctx: CanvasRenderingContext2D, state: GameState, isKill: boolean, isReducedMotion: boolean): void {
+  ctx.font = isKill ? KILL_FONT : HIT_FONT;
+  ctx.fillStyle = isKill ? THEME.killText : THEME.hitText;
+  for (const mark of state.hitMarks) {
+    if (!mark.isActive || mark.isKill !== isKill) {
+      continue;
+    }
+    const progress = mark.age / HIT_MARK_SECONDS;
+    const label = DAMAGE_LABELS[Math.min(Math.round(mark.amount), DAMAGE_LABELS.length - 1)] ?? "";
+    const y = mark.y - 6 - (isReducedMotion ? 0 : progress * HIT_RISE);
+    ctx.globalAlpha = progress < 0.6 ? 1 : (1 - progress) / 0.4;
+    ctx.strokeText(label, mark.x, y);
+    ctx.fillText(label, mark.x, y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * Retour des coups portés : un éclat au point d'impact et le chiffre des dégâts qui s'élève (les coups
+ * fatals en jaune, plus gros). En mouvement réduit, le chiffre reste en place et l'éclat disparaît.
+ */
+export function drawHitMarks(ctx: CanvasRenderingContext2D, state: GameState, isReducedMotion: boolean): void {
+  if (!isReducedMotion) {
+    drawImpacts(ctx, state);
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = THEME.hitTextEdge;
+  ctx.lineWidth = 4;
+  drawLabels(ctx, state, false, isReducedMotion);
+  drawLabels(ctx, state, true, isReducedMotion);
+  ctx.lineJoin = "miter";
 }

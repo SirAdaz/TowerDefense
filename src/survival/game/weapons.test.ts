@@ -233,12 +233,12 @@ describe("kills, gems and effects", () => {
 
   it("pulls gems within reach and turns them into experience", () => {
     const state = createGame(1);
-    dropGem(state, { x: state.player.x + PLAYER.pickupRadius - 5, y: state.player.y }, 2);
-    dropGem(state, { x: state.player.x + 600, y: state.player.y }, 2);
+    dropGem(state, { x: state.player.x + PLAYER.pickupRadius - 5, y: state.player.y }, 1);
+    dropGem(state, { x: state.player.x + 600, y: state.player.y }, 1);
     for (let elapsed = 0; elapsed < 1; elapsed += STEP_SECONDS) {
       updateGems(state, STEP_SECONDS);
     }
-    expect(state.player.xp).toBe(2);
+    expect(state.player.xp).toBe(1);
     expect(state.gems.filter((gem) => gem.isActive)).toHaveLength(1);
   });
 

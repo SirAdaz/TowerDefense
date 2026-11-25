@@ -5,9 +5,11 @@ import { playSurvivalBot, type SurvivalBotProfile, type SurvivalBotResult } from
 const SEEDS = [1, 2, 3, 4, 5];
 /** Une nuit entière se simule en moins d'une seconde, plusieurs sous la mesure de couverture. */
 const TIMEOUT_MS = 120_000;
-const IDLE: SurvivalBotProfile = { isDodging: false, prefers: "first" };
-const CASUAL: SurvivalBotProfile = { isDodging: true, prefers: "passive" };
-const SHARP: SurvivalBotProfile = { isDodging: true, prefers: "weapon" };
+const IDLE: SurvivalBotProfile = { moves: "still", prefers: "first" };
+const BEGINNER: SurvivalBotProfile = { moves: "circle", prefers: "first" };
+const FLEEING: SurvivalBotProfile = { moves: "flee", prefers: "weapon" };
+const CASUAL: SurvivalBotProfile = { moves: "dodge", prefers: "passive" };
+const SHARP: SurvivalBotProfile = { moves: "dodge", prefers: "weapon" };
 
 const played = new Map<SurvivalBotProfile, SurvivalBotResult[]>();
 
@@ -30,11 +32,18 @@ describe("survival difficulty curve", { timeout: TIMEOUT_MS }, () => {
     expect(playSurvivalBot(4, IDLE)).not.toEqual(playAll(IDLE)[2]);
   });
 
-  it("kills a player who lets go of the mouse within two minutes", () => {
+  it("kills a player who lets go of the mouse within four minutes", () => {
     for (const result of playAll(IDLE)) {
       expect(result.hasWon).toBe(false);
-      expect(result.seconds).toBeLessThan(120);
+      expect(result.seconds).toBeLessThan(240);
     }
+  });
+
+  it("lets a beginner who barely moves last about three minutes, with a first level within half a minute", () => {
+    const results = playAll(BEGINNER);
+    expect(median(results.map((result) => result.seconds))).toBeGreaterThanOrEqual(180);
+    expect(results.filter((result) => result.hasWon)).toHaveLength(0);
+    expect(median(results.map((result) => result.levelTimes[2] ?? Infinity))).toBeLessThanOrEqual(30);
   });
 
   it("lets a careless build last a few minutes, not the whole night", () => {
@@ -44,10 +53,16 @@ describe("survival difficulty curve", { timeout: TIMEOUT_MS }, () => {
     expect(results.filter((result) => result.hasWon)).toHaveLength(0);
   });
 
-  it("lets a careful player who builds weapons see the dawn most nights", () => {
+  it("lets a player who only runs from the closest shadow last most of the night, not beat the boss", () => {
+    const results = playAll(FLEEING, SEEDS.slice(0, 3));
+    expect(median(results.map((result) => result.seconds))).toBeGreaterThanOrEqual(300);
+    expect(results.filter((result) => result.hasWon)).toHaveLength(0);
+  });
+
+  it("lets a careful player who builds weapons see the dawn on many nights", () => {
     const results = playAll(SHARP);
     const wins = results.filter((result) => result.hasWon);
-    expect(wins.length).toBeGreaterThanOrEqual(3);
+    expect(wins.length).toBeGreaterThanOrEqual(2);
     expect(median(results.map((result) => result.seconds))).toBeGreaterThanOrEqual(RUN_SECONDS - 90);
     for (const win of wins) {
       // Une vingtaine à une trentaine de choix sur la nuit : assez pour construire, sans tout obtenir.

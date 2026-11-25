@@ -12,9 +12,19 @@ const PUSH_DAMPING = 5;
 const SEPARATION_SHARE = 0.5;
 const SUMMON_DISTANCE = 90;
 
+/**
+ * Minutes « ressenties » par la montée de la horde : la rampe démarre en douceur pendant
+ * `SPAWN.gentleMinutes` (courbe en m² / G), puis rejoint le temps réel et suit la pente normale.
+ * Le joueur a le temps de prendre ses premières cartes avant que la pression monte.
+ */
+export function rampMinutes(time: number): number {
+  const minutes = time / 60;
+  return minutes < SPAWN.gentleMinutes ? (minutes * minutes) / SPAWN.gentleMinutes : minutes;
+}
+
 /** Les ennemis sont plus résistants à chaque minute ; le boss a une vie fixe. */
 export function enemyHpScale(time: number): number {
-  return 1 + SPAWN.hpPerMinute * (time / 60);
+  return 1 + SPAWN.hpPerMinute * rampMinutes(time);
 }
 
 /** Fait entrer un ennemi au point donné, ou renonce si la réserve est pleine. */

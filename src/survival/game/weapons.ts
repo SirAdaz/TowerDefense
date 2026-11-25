@@ -3,8 +3,10 @@ import {
   ARENA_WIDTH,
   HALO_ORB_RADIUS,
   HALO_TURNS_PER_SECOND,
+  LANCE_SECONDS,
   LANCE_SPEED,
   PULSE_PUSH,
+  SPARK_SECONDS,
   SPARK_SPEED,
   WEAPONS,
   type WeaponLevel,
@@ -17,7 +19,7 @@ import type { Enemy, GameState, ProjectileKind, WeaponId } from "./types.ts";
 
 /** Écart entre deux traits d'une même salve d'étincelles, en radians. */
 const SPARK_SPREAD = 0.16;
-const PROJECTILE_SECONDS: Record<ProjectileKind, number> = { spark: 1.3, lance: 4.5 };
+const PROJECTILE_SECONDS: Record<ProjectileKind, number> = { spark: SPARK_SECONDS, lance: LANCE_SECONDS };
 const PROJECTILE_SPEED: Record<ProjectileKind, number> = { spark: SPARK_SPEED, lance: LANCE_SPEED };
 
 /** Point de travail réutilisé pour les orbes du halo : aucun objet créé par image. */

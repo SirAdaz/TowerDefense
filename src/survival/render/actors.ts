@@ -39,6 +39,9 @@ function drawKind(ctx: CanvasRenderingContext2D, state: GameState, kind: EnemyKi
   }
   ctx.fillStyle = ENEMY_COLORS[kind];
   ctx.fill();
+  ctx.strokeStyle = THEME.enemyEdge;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
 }
 
 /** Liseré clair des élites. */

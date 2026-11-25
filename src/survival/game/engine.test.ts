@@ -71,15 +71,15 @@ describe("step", () => {
     expect(state.time).toBe(endTime);
   });
 
-  it("kills a player who never moves within the first two minutes", () => {
+  it("kills a player who never moves within the first four minutes", () => {
     const state = createGame(7);
-    run(state, 120);
+    run(state, 240);
     expect(state.phase).toBe("lost");
   });
 
   it("never holds more objects than its pools, without creating any", () => {
     const state = createGame(3);
-    const pools = [state.enemies, state.projectiles, state.gems, state.effects];
+    const pools = [state.enemies, state.projectiles, state.gems, state.effects, state.hitMarks];
     const firstObjects = pools.map((pool) => pool[0]);
     state.player.hp = 1e9;
     state.stats.maxHp = 1e9;
