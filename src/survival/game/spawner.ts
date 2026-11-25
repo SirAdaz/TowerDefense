@@ -1,5 +1,5 @@
 import { ARENA_HEIGHT, ARENA_WIDTH, BOSS, ELITE, MAX_ENEMIES, RUN_SECONDS, SPAWN, SPAWN_MIX } from "./balance.ts";
-import { promoteToElite, spawnEnemy } from "./enemies.ts";
+import { promoteToElite, rampMinutes, spawnEnemy } from "./enemies.ts";
 import { nextIndex, nextRandom } from "./rng.ts";
 import type { Enemy, EnemyKind, GameState } from "./types.ts";
 
@@ -9,9 +9,9 @@ const RESERVED_SLOTS = 24;
 const MAX_BACKLOG = 6;
 const GROUP_SPREAD = 46;
 
-/** Ennemis par seconde à un instant de la nuit. */
+/** Ennemis par seconde à un instant de la nuit (rampe douce au début, voir `rampMinutes`). */
 export function spawnRate(time: number): number {
-  return SPAWN.baseRate + SPAWN.ratePerMinute * (Math.min(time, RUN_SECONDS) / 60);
+  return SPAWN.baseRate + SPAWN.ratePerMinute * rampMinutes(Math.min(time, RUN_SECONDS));
 }
 
 interface MixEntry {

@@ -13,8 +13,8 @@ Jeu de survie à vagues : une luciole, des ombres qui arrivent de partout en nom
 
 ## Expérience et améliorations
 
-- Un ennemi détruit laisse un éclat. Si un éclat est à moins de 85 unités du joueur, alors il file vers lui (640 unités/s) et lui donne son expérience en l'atteignant.
-- Passer du niveau N au suivant demande `6 + 5 × (N − 1) + 0,5 × (N − 1)²` points, arrondi à l'entier inférieur (6, 11, 18, 25…). Une nuit gagnée finit vers le niveau 25 à 30.
+- Un ennemi détruit laisse un éclat. Si un éclat est à moins de 130 unités du joueur, alors il file vers lui (640 unités/s) et lui donne son expérience en l'atteignant.
+- Passer du niveau N au suivant demande `2 + 5 × (N − 1) + 0,5 × (N − 1)²` points, arrondi à l'entier inférieur (2, 7, 14, 21…) : le premier niveau arrive dans les premières secondes. Une nuit gagnée finit vers le niveau 25 à 30.
 - Si un niveau est franchi, alors le joueur récupère 8 points de vie, la partie se fige et **3 cartes** différentes sont proposées : une arme nouvelle, un niveau d'arme ou un niveau de passif. Il en choisit une (clic, ou touches 1, 2, 3) et la partie reprend. Échap ne passe pas ce choix.
 - Une arme monte jusqu'au niveau 5, un passif jusqu'au niveau 3. Si moins de 3 cartes restent possibles, alors un soin (« Second souffle », 30 points de vie) complète le tirage.
 - Si plusieurs niveaux sont franchis d'un coup, alors les choix s'enchaînent.
@@ -23,7 +23,7 @@ Jeu de survie à vagues : une luciole, des ombres qui arrivent de partout en nom
 
 | Arme      | Ce qu'elle fait                                                                                 | Niveau 1                        | Niveau 5                           |
 | --------- | ----------------------------------------------------------------------------------------------- | ------------------------------- | ---------------------------------- |
-| Étincelle | Un trait vers l'ennemi le plus proche (640 unités/s).                                           | 12 dégâts, 1 trait / 0,6 s      | 24 dégâts, 3 traits / 0,45 s, traverse 1 ennemi |
+| Étincelle | Un trait vers l'ennemi le plus proche (640 unités/s, portée ~580).                              | 16 dégâts, 1 trait / 0,45 s     | 26 dégâts, 3 traits / 0,42 s, traverse 1 ennemi |
 | Halo      | Des orbes en orbite autour du joueur, dégâts continus au contact.                               | 2 orbes, 30 dégâts/s, rayon 85  | 5 orbes, 70 dégâts/s, rayon 110    |
 | Onde      | Une détonation autour du joueur : blesse et repousse (sauf le boss).                            | 18 dégâts, rayon 150, / 3,6 s   | 52 dégâts, rayon 230, / 2,7 s      |
 | Foudre    | Frappe des ennemis au hasard dans l'arène, avec un petit impact de zone. **À débloquer.**       | 2 éclairs de 26, / 2,2 s        | 6 éclairs de 58, / 1,6 s           |
@@ -46,7 +46,7 @@ Le détail de chaque niveau est le texte de sa carte (`WEAPONS` dans `balance.ts
 
 ## Ennemis
 
-Vie à la minute M = vie de base × (1 + 0,28 × M). Le boss a une vie fixe.
+Vie à la minute M = vie de base × (1 + 0,32 × R(M)). Le boss a une vie fixe. R(M) est la rampe douce : M² / 2 pendant les 2 premières minutes, puis M.
 
 | Ennemi   | Forme            | Vie de base | Vitesse | Dégâts | Expérience | Points | Particularité                                                                 |
 | -------- | ---------------- | ----------- | ------- | ------ | ---------- | ------ | ----------------------------------------------------------------------------- |
@@ -54,11 +54,11 @@ Vie à la minute M = vie de base × (1 + 0,28 × M). Le boss a une vie fixe.
 | Nuée     | triangle orange  | 6           | 150     | 5      | 1          | 8      | Arrive par groupes de 3.                                                      |
 | Colosse  | carré violet     | 80          | 52      | 16     | 5          | 40     | —                                                                             |
 | Fonceur  | losange turquoise| 30          | 95      | 12     | 3          | 30     | À moins de 380 unités : s'arrête 0,8 s (trait pointillé), fonce 0,55 s à 420 en ligne droite, puis se repose 2,6 s. |
-| L'Éclipse (boss) | grand disque noir cerclé | 5 200 | 72 | 28 | — | 5 000 (prime) | Charge comme un fonceur (à 540) et appelle 6 nuées toutes les 6 s. |
+| L'Éclipse (boss) | grand disque noir cerclé | 7 200 | 72 | 28 | — | 5 000 (prime) | Charge comme un fonceur (à 540) et appelle 6 nuées toutes les 6 s. |
 
 - **Élite** : à 1:30 puis toutes les 45 s, un ennemi du moment arrive en élite (liseré clair) : vie × 8, taille × 1,5, points × 5, +15 d'expérience.
-- **Rythme** : `0,9 + 0,8 × minute` ennemis par seconde, entrés par un point au hasard du pourtour. Pendant le combat contre le boss, le rythme tombe à 35 %.
-- **Composition** : rôdeurs seuls au début ; nuées à 1:00 ; colosses à 3:00 ; fonceurs à 4:30 ; plus de colosses et de fonceurs à 7:00.
+- **Rythme** : `0,9 + 0,8 × R(M)` ennemis par seconde (même rampe douce que la vie), entrés par un point au hasard du pourtour. Pendant le combat contre le boss, le rythme tombe à 35 %.
+- **Composition** : rôdeurs seuls au début ; nuées à 1:00 ; colosses à 3:30 ; fonceurs à 4:30 ; plus de colosses et de fonceurs à 7:00.
 - Les ennemis ne s'empilent pas : ils s'écartent les uns des autres. L'arène ne contient jamais plus de 336 ennemis de la horde (réserve de 360 avec le boss et ses renforts).
 
 ## Score, record, pièces
@@ -82,7 +82,11 @@ Vie à la minute M = vie de base × (1 + 0,28 × M). Le boss a une vie fixe.
 
 ## Équilibrage (joueur automatique, `npm run simulate:survival`)
 
-- Si le joueur lâche la souris, alors il perd avant 2:00.
+Chiffres sur 30 graines : `npm run simulate:survival` (tableau Markdown).
+
+- Si le joueur lâche la souris, alors il perd avant 4:00 (vers 2:45).
+- Si le joueur bouge un peu (cercle autour du centre, première carte), alors il tient environ 3 à 4 minutes et passe le niveau 2 dans les 30 premières secondes.
+- Si le joueur se contente de fuir l'ombre la plus proche en montant ses armes, alors il tient 6 à 10 minutes mais ne bat pas le boss.
 - Si le joueur esquive mais ne prend que des passifs, alors il tient quelques minutes (médiane au-delà de 2:30) et ne voit jamais l'aube.
-- Si le joueur esquive et monte ses armes, alors il voit l'aube la plupart des nuits, entre les niveaux 20 et 36.
+- Si le joueur esquive et monte ses armes, alors il voit l'aube environ deux nuits sur trois, entre les niveaux 20 et 36.
 - La meilleure nuit rapporte moins de la moitié du prix de tous les déblocages, et six de ces nuits les paient tous.

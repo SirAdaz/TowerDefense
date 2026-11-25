@@ -12,7 +12,7 @@ import {
   SPAWN,
   STEP_SECONDS,
 } from "./balance.ts";
-import { enemyHpScale, promoteToElite, separateEnemies, spawnEnemy, updateEnemies } from "./enemies.ts";
+import { enemyHpScale, promoteToElite, rampMinutes, separateEnemies, spawnEnemy, updateEnemies } from "./enemies.ts";
 import { findEnemiesNear, rebuildGrid } from "./spatial.ts";
 import { pickKind, spawnRate, updateSpawns } from "./spawner.ts";
 import { createGame } from "./state.ts";
@@ -175,6 +175,16 @@ describe("updateSpawns", () => {
     expect(spawnRate(0)).toBe(SPAWN.baseRate);
     expect(spawnRate(300)).toBeCloseTo(SPAWN.baseRate + SPAWN.ratePerMinute * 5);
     expect(spawnRate(RUN_SECONDS + 300)).toBe(spawnRate(RUN_SECONDS));
+  });
+
+  it("ramps up gently during the first minutes, then follows the clock", () => {
+    const gentleSeconds = SPAWN.gentleMinutes * 60;
+    expect(rampMinutes(0)).toBe(0);
+    expect(rampMinutes(gentleSeconds / 2)).toBeCloseTo(SPAWN.gentleMinutes / 4);
+    expect(rampMinutes(gentleSeconds)).toBeCloseTo(SPAWN.gentleMinutes);
+    expect(rampMinutes(gentleSeconds + 60)).toBeCloseTo(SPAWN.gentleMinutes + 1);
+    expect(spawnRate(60)).toBeLessThan(SPAWN.baseRate + SPAWN.ratePerMinute);
+    expect(enemyHpScale(60)).toBeLessThan(1 + SPAWN.hpPerMinute);
   });
 
   it("only sends drifters at first, then mixes in every kind", () => {

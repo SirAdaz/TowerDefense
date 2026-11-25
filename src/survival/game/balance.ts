@@ -18,14 +18,14 @@ export const PLAYER = {
   radius: 12,
   speed: 330,
   maxHp: 100,
-  pickupRadius: 85,
+  pickupRadius: 130,
   /** Invulnérabilité après un coup : un essaim ne vide pas la vie en une image. */
   hurtCooldown: 0.5,
   gemSpeed: 640,
 } as const;
 
 /** Expérience demandée pour quitter un niveau : `XP_BASE + XP_PER_LEVEL × n + XP_CURVE × n²` (n = niveaux déjà passés). */
-export const XP_BASE = 6;
+export const XP_BASE = 2;
 export const XP_PER_LEVEL = 5;
 export const XP_CURVE = 0.5;
 
@@ -45,7 +45,7 @@ export const ENEMIES: Record<EnemyKind, EnemyStats> = {
   swarmer: { hp: 6, speed: 150, radius: 8, damage: 5, xp: 1, points: 8, dashSpeed: 0 },
   brute: { hp: 80, speed: 52, radius: 24, damage: 16, xp: 5, points: 40, dashSpeed: 0 },
   charger: { hp: 30, speed: 95, radius: 14, damage: 12, xp: 3, points: 30, dashSpeed: 420 },
-  boss: { hp: 5200, speed: 72, radius: 56, damage: 28, xp: 0, points: 0, dashSpeed: 540 },
+  boss: { hp: 7200, speed: 72, radius: 56, damage: 28, xp: 0, points: 0, dashSpeed: 540 },
 };
 
 export const CHARGE = {
@@ -64,7 +64,9 @@ export const BOSS = { summonEverySeconds: 6, summonCount: 6, spawnRateFactor: 0.
 export const SPAWN = {
   baseRate: 0.9,
   ratePerMinute: 0.8,
-  hpPerMinute: 0.28,
+  hpPerMinute: 0.32,
+  /** Minutes de montée douce en début de nuit (voir `rampMinutes`). */
+  gentleMinutes: 2,
   /** Distance hors de l'arène où les ennemis apparaissent. */
   margin: 40,
   swarmSize: 3,
@@ -74,7 +76,7 @@ export const SPAWN = {
 export const SPAWN_MIX: ReadonlyArray<{ readonly fromMinute: number; readonly weights: Partial<Record<EnemyKind, number>> }> = [
   { fromMinute: 0, weights: { drifter: 10 } },
   { fromMinute: 1, weights: { drifter: 10, swarmer: 2 } },
-  { fromMinute: 3, weights: { drifter: 10, swarmer: 2, brute: 2 } },
+  { fromMinute: 3.5, weights: { drifter: 10, swarmer: 2, brute: 2 } },
   { fromMinute: 4.5, weights: { drifter: 9, swarmer: 3, brute: 2, charger: 2 } },
   { fromMinute: 7, weights: { drifter: 7, swarmer: 3, brute: 3, charger: 4 } },
 ];
@@ -112,11 +114,11 @@ export const WEAPONS: Record<WeaponId, WeaponDefinition> = {
   spark: {
     name: "Étincelle",
     levels: [
-      { damage: 12, cooldown: 0.6, count: 1, area: 5, pierce: 0, text: "Un trait de lumière vers l'ennemi le plus proche." },
-      { damage: 17, cooldown: 0.6, count: 1, area: 5, pierce: 0, text: "Dégâts +40 %." },
-      { damage: 17, cooldown: 0.6, count: 2, area: 5, pierce: 0, text: "Deux traits à chaque tir." },
-      { damage: 19, cooldown: 0.45, count: 2, area: 5, pierce: 1, text: "Tire plus vite, traverse un ennemi." },
-      { damage: 24, cooldown: 0.45, count: 3, area: 6, pierce: 1, text: "Trois traits, dégâts +25 %." },
+      { damage: 16, cooldown: 0.45, count: 1, area: 5, pierce: 0, text: "Un trait de lumière vers l'ennemi le plus proche." },
+      { damage: 21, cooldown: 0.45, count: 1, area: 5, pierce: 0, text: "Dégâts +30 %." },
+      { damage: 21, cooldown: 0.45, count: 2, area: 5, pierce: 0, text: "Deux traits à chaque tir." },
+      { damage: 21, cooldown: 0.42, count: 2, area: 5, pierce: 1, text: "Tire plus vite, traverse un ennemi." },
+      { damage: 26, cooldown: 0.42, count: 3, area: 6, pierce: 1, text: "Trois traits, dégâts +20 %." },
     ],
   },
   halo: {
@@ -163,6 +165,9 @@ export const WEAPONS: Record<WeaponId, WeaponDefinition> = {
 
 export const WEAPON_IDS = Object.keys(WEAPONS) as WeaponId[];
 export const SPARK_SPEED = 640;
+/** Durée de vol de l'étincelle : sa portée (environ 580 unités) fait tomber les éclats près du joueur. */
+export const SPARK_SECONDS = 0.9;
+export const LANCE_SECONDS = 4.5;
 export const LANCE_SPEED = 430;
 export const HALO_TURNS_PER_SECOND = 0.55;
 export const HALO_ORB_RADIUS = 13;
