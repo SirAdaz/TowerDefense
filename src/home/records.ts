@@ -1,3 +1,4 @@
+import { describeChessRecord } from "../chess/game/summary.ts";
 import type { KeyValueStore } from "../shared/storage.ts";
 import { loadProfile } from "../survival/game/profile.ts";
 import { describeRecord } from "../survival/ui/format.ts";
@@ -20,4 +21,5 @@ function describeTowerDefense(store: KeyValueStore): string | null {
 export const GAME_RECORDS: readonly GameRecord[] = [
   { gameId: "tower-defense", describe: describeTowerDefense },
   { gameId: "nuit-blanche", describe: (store) => describeRecord(loadProfile(store)) },
+  { gameId: "echecs", describe: describeChessRecord },
 ];

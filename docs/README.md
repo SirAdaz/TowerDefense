@@ -10,5 +10,6 @@
 - [x] Mise en ligne
 - [x] Page d'accueil, un dossier par jeu
 - [x] Deuxième jeu : Nuit blanche ([product/SPECS-NUIT-BLANCHE.md](product/SPECS-NUIT-BLANCHE.md))
+- [x] Page Échecs : problèmes tirés des gaffes ([product/SPECS-ECHECS.md](product/SPECS-ECHECS.md))
 
 Décisions datées : [DECISIONS.md](DECISIONS.md).

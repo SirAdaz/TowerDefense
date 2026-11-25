@@ -1,0 +1,471 @@
+/* Échecs : table de club le soir. Fond vert sombre, bois clair du plateau, laiton pour l'action. */
+:root {
+  --felt: #101815;
+  --panel: #18231f;
+  --panel-raised: #20302a;
+  --line: #3d5249;
+  --ink: #f1efe6;
+  --muted: #b3c0b8;
+  --brass: #f0c05a;
+  --brass-ink: #1d1503;
+  --good: #8fe0a4;
+  --bad: #ffab9c;
+  --square-light: #ecdcb9;
+  --square-dark: #a9794f;
+  --piece-white: #fffdf6;
+  --piece-black: #26211d;
+  --mark: #1d6fd6;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--felt);
+  color: var(--ink);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 3px solid var(--brass);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--brass);
+}
+
+.page {
+  width: min(100% - 32px, 980px);
+  margin-inline: auto;
+  padding-block: 24px 40px;
+}
+
+.topbar {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 20px;
+}
+
+.topbar h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tagline,
+.hint,
+.counts {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.back-link {
+  justify-self: start;
+  padding-block: 4px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+main {
+  display: grid;
+  gap: 16px;
+}
+
+.panel {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.panel h2 {
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.counts {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Boutons et champ : 44 px de haut, confortables au doigt. */
+.btn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btn-primary {
+  border-color: var(--brass);
+  background: var(--brass);
+  color: var(--brass-ink);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.username-form {
+  display: grid;
+  gap: 8px;
+}
+
+.username-form label,
+.progress label {
+  font-weight: 600;
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.field-row input {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  background: var(--felt);
+  color: var(--ink);
+  font: inherit;
+}
+
+.field-row input[aria-invalid="true"] {
+  border-color: var(--bad);
+}
+
+.error {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.progress label {
+  grid-column: 1 / -1;
+  font-variant-numeric: tabular-nums;
+}
+
+progress {
+  width: 100%;
+  height: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--felt);
+  accent-color: var(--brass);
+  appearance: none;
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background: var(--felt);
+}
+
+progress::-webkit-progress-value {
+  background: var(--brass);
+}
+
+progress::-moz-progress-bar {
+  background: var(--brass);
+}
+
+.status:empty,
+.feedback:empty,
+.counts:empty {
+  display: none;
+}
+
+.empty {
+  color: var(--muted);
+}
+
+/* Entraîneur : le plateau prend toute la largeur sur téléphone, le texte passe à côté dès 760 px. */
+.trainer {
+  display: grid;
+  gap: 16px;
+}
+
+.board-wrap {
+  width: min(100%, 560px, 100vh - 190px);
+  min-width: 240px;
+  margin-inline: auto;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.square {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--square-light);
+  color: #5a3d25;
+  aspect-ratio: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.square-dark {
+  background: var(--square-dark);
+  color: #1f150b;
+}
+
+/* Le contour de focus est tracé à l'intérieur de la case : il ne déborde pas du plateau. */
+.square:focus-visible {
+  z-index: 1;
+  outline: 3px solid var(--mark);
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 5px #ffffff;
+}
+
+.square.is-last-move {
+  background: #d9c95e;
+}
+
+.square-dark.is-last-move {
+  background: #b9a23a;
+}
+
+.square.is-selected {
+  box-shadow: inset 0 0 0 4px var(--mark);
+}
+
+.square.is-hint {
+  box-shadow: inset 0 0 0 5px #0d8a4f;
+}
+
+/* Coup possible : un point au centre, un anneau autour d'une pièce prenable. */
+.square.is-target::after {
+  content: "";
+  position: absolute;
+  width: 30%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgb(20 40 30 / 75%);
+}
+
+.square.is-capture::after {
+  width: 86%;
+  border: 4px solid rgb(20 40 30 / 75%);
+  background: none;
+}
+
+/* Repères de bord : lettre en bas à droite, chiffre en haut à gauche de la case. */
+.coord {
+  position: absolute;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.coord-file {
+  right: 3px;
+  bottom: 2px;
+}
+
+.coord-rank {
+  top: 2px;
+  left: 3px;
+}
+
+.piece {
+  width: 92%;
+  height: 92%;
+  pointer-events: none;
+}
+
+.piece-shape {
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.piece-detail {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.piece-white .piece-shape {
+  fill: var(--piece-white);
+  stroke: var(--piece-black);
+}
+
+.piece-white .piece-detail {
+  stroke: var(--piece-black);
+}
+
+.piece-black .piece-shape {
+  fill: var(--piece-black);
+  stroke: var(--piece-white);
+  stroke-width: 1.1;
+}
+
+.piece-black .piece-detail {
+  stroke: var(--piece-white);
+}
+
+.square.is-dragging .piece {
+  opacity: 0.3;
+}
+
+.piece-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / 45%));
+}
+
+.trainer-side {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.prompt {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.feedback {
+  padding: 10px 12px;
+  border-left: 4px solid var(--brass);
+  border-radius: 4px;
+  background: var(--panel-raised);
+  font-weight: 600;
+}
+
+.debrief {
+  display: grid;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.dialog {
+  max-width: min(100% - 32px, 420px);
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+.dialog form {
+  display: grid;
+  gap: 14px;
+}
+
+.footer {
+  display: grid;
+  gap: 4px;
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (min-width: 760px) {
+  .trainer {
+    grid-template-columns: minmax(0, 560px) minmax(220px, 1fr);
+    align-items: start;
+  }
+
+  .board-wrap {
+    margin-inline: 0;
+  }
+}

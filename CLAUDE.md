@@ -23,6 +23,7 @@ Petits jeux solo dans le navigateur, joués à la souris sur ordinateur : une pa
 ## Pièges
 
 - Nouveau jeu = une page `<dossier>/index.html`, son entrée dans `vite.config.ts` (`PAGES`), son bloc `location` dans `docker/nginx.conf`, sa carte dans `index.html` et son record dans `src/home/records.ts`.
+- Échecs (`/echecs/`, `src/chess/`) : `game/` pur et testé, `data/` pour le réseau, IndexedDB et le moteur, `ui/` pour le plateau. Stockfish est sous GPL-3.0 : ses fichiers restent séparés (import `?url`, Web Worker) et toute montée de version met à jour `THIRD-PARTY-NOTICES.md` et `public/licences/echecs.txt`. Aucun pseudo réel dans le code, les tests ou les docs.
 - Nuit blanche : la simulation (`src/survival/game/`) ne crée aucun objet par pas (réserves de taille fixe, grille de voisinage) ; garder cette règle dans `step` et tout ce qu'il appelle.
 - `window.nuitBlancheTest` (vitesse du temps, état) n'existe que sur le serveur Vite (`import.meta.env.DEV`) : jamais dans le build.
 - La CSP de `docker/security-headers.conf` est recopiée par le serveur de production : ne pas la changer sans le signaler.

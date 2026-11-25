@@ -1,0 +1,60 @@
+Page « Échecs » : logiciels tiers
+==================================
+
+Stockfish.js 19 (moteur d'analyse)
+----------------------------------
+La page télécharge et exécute, dans un Web Worker séparé, le moteur d'échecs
+Stockfish compilé en WebAssembly par le projet Stockfish.js (version 19.0.1,
+variante « lite single-threaded », fichiers non modifiés du paquet npm
+« stockfish »).
+
+  Stockfish.js 19 (c) 2026, Chess.com, LLC
+  Fondé sur Stockfish (c) T. Romstad, M. Costalba, J. Kiiski, G. Linscott
+  et autres contributeurs. Réseaux d'évaluation : Chris Bao (sscg13).
+
+Stockfish est un logiciel libre : vous pouvez le redistribuer et le modifier
+selon les termes de la licence publique générale GNU (GPL), version 3 ou
+ultérieure, publiée par la Free Software Foundation. Il est distribué SANS
+AUCUNE GARANTIE.
+
+  Texte de la licence : /licences/GPL-3.0.txt
+  Code source correspondant (version 19.0.1) :
+    https://github.com/nmrugg/stockfish.js/tree/v19.0.1
+  Projet d'origine :
+    https://github.com/official-stockfish/Stockfish
+
+Le code de cette page ne fait qu'échanger du texte (protocole UCI) avec le
+moteur ; il est publié à part :
+    https://github.com/SirAdaz/TowerDefense
+
+chess.js 1.4.0 (règles du jeu, lecture des PGN)
+-----------------------------------------------
+Copyright (c) 2025, Jeff Hlywa (jhlywa@gmail.com)
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+Données
+-------
+Les parties sont lues sur l'API publique de Chess.com (api.chess.com), depuis
+votre navigateur. Cette page n'est ni affiliée à Chess.com ni approuvée par
+Chess.com.
