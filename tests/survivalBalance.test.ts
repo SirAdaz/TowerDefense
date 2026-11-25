@@ -5,9 +5,9 @@ import { playSurvivalBot, type SurvivalBotProfile, type SurvivalBotResult } from
 const SEEDS = [1, 2, 3, 4, 5];
 /** Une nuit entière se simule en moins d'une seconde, plusieurs sous la mesure de couverture. */
 const TIMEOUT_MS = 120_000;
-const IDLE: SurvivalBotProfile = { isDodging: false, prefers: "first" };
-const CASUAL: SurvivalBotProfile = { isDodging: true, prefers: "passive" };
-const SHARP: SurvivalBotProfile = { isDodging: true, prefers: "weapon" };
+const IDLE: SurvivalBotProfile = { moves: "still", prefers: "first" };
+const CASUAL: SurvivalBotProfile = { moves: "dodge", prefers: "passive" };
+const SHARP: SurvivalBotProfile = { moves: "dodge", prefers: "weapon" };
 
 const played = new Map<SurvivalBotProfile, SurvivalBotResult[]>();
 

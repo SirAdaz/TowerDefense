@@ -3,11 +3,16 @@ import { coinsEarned, finalScore, step, survivedSeconds } from "../src/survival/
 import { createGame } from "../src/survival/game/state.ts";
 import type { Enemy, GameState, PlayerInput, UpgradeId } from "../src/survival/game/types.ts";
 import { chooseUpgrade } from "../src/survival/game/upgrades.ts";
+import { findNearestEnemy } from "../src/survival/game/weapons.ts";
 
 /** Façon de jouer du joueur automatique. */
 export interface SurvivalBotProfile {
-  /** `false` : reste planté au centre, comme un joueur qui a lâché la souris. */
-  readonly isDodging: boolean;
+  /**
+   * `still` : reste planté au centre (souris lâchée) ; `circle` : tourne en rond autour du centre,
+   * comme un débutant qui bouge un peu ; `flee` : s'éloigne de l'ennemi le plus proche ; `dodge` :
+   * cherche la direction la moins dangereuse, comme un joueur attentif.
+   */
+  readonly moves: "still" | "circle" | "flee" | "dodge";
   /** Carte préférée au passage de niveau ; à défaut, la première. */
   readonly prefers: "weapon" | "passive" | "first";
 }
@@ -21,6 +26,8 @@ export interface SurvivalBotResult {
   readonly coins: number;
   readonly peakEnemies: number;
   readonly hpLeft: number;
+  /** `levelTimes[n]` : seconde de jeu où le niveau n est atteint (absent s'il ne l'est jamais). */
+  readonly levelTimes: readonly number[];
 }
 
 const DANGER_RADIUS = 300;
@@ -32,6 +39,11 @@ const DECISION_STEPS = 4;
 const DIRECTION_COUNT = 16;
 const LOOKAHEAD = 70;
 const WALL_MARGIN = 90;
+/** Cercle du débutant : 260 unités autour du centre, parcouru à environ 60 % de la vitesse du joueur. */
+const CIRCLE_RADIUS = 260;
+const CIRCLE_TURNS_PER_SECOND = 0.75 / (Math.PI * 2);
+/** Fuite : à moins de 160 unités d'un bord, le joueur revient vers le centre plutôt que de s'y coincer. */
+const FLEE_WALL_GAP = 160;
 
 /** Ennemis assez proches pour compter dans la décision en cours (liste réutilisée). */
 const threats: Enemy[] = [];
@@ -71,7 +83,7 @@ function nearestGemDistance(state: GameState, x: number, y: number): number {
 }
 
 /** Essaie 16 directions (et rester sur place) : garde la moins dangereuse, à danger égal la plus proche d'un éclat. */
-function steer(state: GameState, input: PlayerInput): void {
+function dodge(state: GameState, input: PlayerInput): void {
   const { player } = state;
   let bestScore = Infinity;
   collectThreats(state);
@@ -89,6 +101,43 @@ function steer(state: GameState, input: PlayerInput): void {
   }
 }
 
+/** Fuit l'ennemi le plus proche, en revenant vers le centre près des bords. */
+function flee(state: GameState, input: PlayerInput): void {
+  const { player } = state;
+  const nearest = findNearestEnemy(state);
+  let awayX = nearest === null ? 0 : player.x - nearest.x;
+  let awayY = nearest === null ? 0 : player.y - nearest.y;
+  const length = Math.hypot(awayX, awayY) || 1;
+  awayX /= length;
+  awayY /= length;
+  const wallGap = Math.min(player.x, player.y, ARENA_WIDTH - player.x, ARENA_HEIGHT - player.y);
+  if (wallGap < FLEE_WALL_GAP) {
+    const toCenterX = ARENA_WIDTH / 2 - player.x;
+    const toCenterY = ARENA_HEIGHT / 2 - player.y;
+    const centerLength = Math.hypot(toCenterX, toCenterY) || 1;
+    awayX += toCenterX / centerLength;
+    awayY += toCenterY / centerLength;
+  }
+  input.targetX = player.x + awayX * LOOKAHEAD;
+  input.targetY = player.y + awayY * LOOKAHEAD;
+}
+
+function circle(state: GameState, input: PlayerInput): void {
+  const angle = state.time * CIRCLE_TURNS_PER_SECOND * Math.PI * 2;
+  input.targetX = ARENA_WIDTH / 2 + Math.cos(angle) * CIRCLE_RADIUS;
+  input.targetY = ARENA_HEIGHT / 2 + Math.sin(angle) * CIRCLE_RADIUS;
+}
+
+function steer(state: GameState, profile: SurvivalBotProfile, input: PlayerInput): void {
+  if (profile.moves === "dodge") {
+    dodge(state, input);
+  } else if (profile.moves === "flee") {
+    flee(state, input);
+  } else if (profile.moves === "circle") {
+    circle(state, input);
+  }
+}
+
 function pickChoice(state: GameState, profile: SurvivalBotProfile): number {
   const preferred = state.choices.findIndex((choice) => choice.kind === profile.prefers);
   return Math.max(preferred, 0);
@@ -103,16 +152,18 @@ export function playSurvivalBot(
   const state = createGame(seed, unlocked);
   const input: PlayerInput = { targetX: ARENA_WIDTH / 2, targetY: ARENA_HEIGHT / 2 };
   const maxSteps = (RUN_SECONDS + BOSS_FIGHT_SECONDS) / STEP_SECONDS;
+  const levelTimes: number[] = [];
   let peakEnemies = 0;
   for (let stepIndex = 0; stepIndex < maxSteps && state.phase !== "won" && state.phase !== "lost"; stepIndex++) {
     if (state.phase === "levelUp") {
       chooseUpgrade(state, pickChoice(state, profile));
       continue;
     }
-    if (profile.isDodging && stepIndex % DECISION_STEPS === 0) {
-      steer(state, input);
+    if (stepIndex % DECISION_STEPS === 0) {
+      steer(state, profile, input);
     }
     step(state, input);
+    levelTimes[state.player.level] ??= Math.round(state.time);
     peakEnemies = Math.max(peakEnemies, state.enemyCount);
   }
   return {
@@ -124,5 +175,6 @@ export function playSurvivalBot(
     coins: coinsEarned(state),
     peakEnemies,
     hpLeft: Math.round(state.player.hp),
+    levelTimes,
   };
 }
