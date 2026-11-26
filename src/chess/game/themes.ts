@@ -1,4 +1,7 @@
 import type { Chess, Move } from "chess.js";
+import { detectBlunderTheme } from "./blunderThemes.ts";
+import { exchangeGain } from "./exchange.ts";
+import { phaseOf } from "./pgn.ts";
 import { selectSession } from "./schedule.ts";
 import {
   alignmentsFrom,
@@ -15,20 +18,42 @@ import {
 import type { BoardPiece, PlayedLine } from "./tactics.ts";
 import type { Puzzle } from "./types.ts";
 
-export type TacticTheme = "mateIn1" | "mateIn2" | "hangingPiece" | "fork" | "discoveredAttack" | "pin" | "skewer" | "other";
+export type TacticTheme =
+  | "mateIn1"
+  | "mateIn2"
+  | "mateIn3"
+  | "hangingPiece"
+  | "fork"
+  | "discoveredAttack"
+  | "pin"
+  | "skewer"
+  | "allowedMate"
+  | "hungPiece"
+  | "ignoredThreat"
+  | "endgame"
+  | "other";
 
 export const THEME_NAMES: Readonly<Record<TacticTheme, string>> = {
   mateIn1: "Mat en 1",
   mateIn2: "Mat en 2",
+  mateIn3: "Mat en 3",
   hangingPiece: "Pièce en prise",
   fork: "Fourchette",
   discoveredAttack: "Attaque à la découverte",
   pin: "Clouage",
   skewer: "Enfilade",
+  allowedMate: "Mat à parer",
+  hungPiece: "Pièce laissée en prise",
+  ignoredThreat: "Menace ignorée",
+  endgame: "Finale",
   other: "Autre",
 };
 
-/** Un thème n'est retenu que si la suite du moteur gagne au moins 2 pions de matériel (sauf mat). */
+/**
+ * Un thème de gain n'est retenu que si la suite du moteur gagne au moins 2 pions (sauf mat) ; un
+ * thème de défense, que si le coup joué perd au moins 2 pions de plus que la meilleure suite.
+ * 2 pions : la qualité (tour contre pièce mineure) compte, un pion seul non.
+ */
 export const MIN_THEME_GAIN = 2;
 
 /** Pièce de valeur pour une fourchette ou une découverte : au moins un cavalier. */
@@ -42,17 +67,27 @@ function isWorthTarget(chess: Chess, piece: BoardPiece, attackerValue: number): 
   return valueOf(piece.type) > attackerValue || (isUndefended && valueOf(piece.type) >= MIN_TARGET_VALUE);
 }
 
-/** Le premier coup prend une pièce non défendue, ou qui vaut plus que celle qui prend. */
+/** Le premier coup prend une pièce non défendue ou mal défendue : l'échange sur la case gagne au moins 2 pions. */
 function isHangingCapture(line: PlayedLine, first: Move): boolean {
-  if (first.captured === undefined || valueOf(first.captured) < MIN_TARGET_VALUE) {
-    return false;
-  }
-  const after = line.positions[0];
-  const canRecapture = after?.moves({ verbose: true }).some((move) => move.to === first.to) ?? true;
-  return valueOf(first.captured) > valueOf(first.piece) || !canRecapture;
+  return first.captured !== undefined && exchangeGain(line.start, first) >= MIN_THEME_GAIN;
 }
 
-/** Le premier coup attaque au moins deux pièces de valeur, et la suite en prend une. */
+/**
+ * Plus loin dans la suite (après un échec ou un échange), le joueur prend une pièce non défendue ou
+ * mal défendue. Vient après les motifs : une fourchette ou un clouage finit aussi par une prise.
+ */
+function isLaterHangingCapture(line: PlayedLine): boolean {
+  return line.moves.some((move, index) => {
+    const before = line.positions[index - 1];
+    return index > 0 && index % 2 === 0 && move.captured !== undefined && before !== undefined && exchangeGain(before, move) >= MIN_THEME_GAIN;
+  });
+}
+
+/**
+ * Le premier coup attaque au moins deux pièces de valeur, et la suite en prend une. Quand il donne
+ * échec, la suite peut gagner autrement (la pièce attaquée se sauve en cédant autre chose) : le
+ * gain de la suite, déjà exigé, suffit.
+ */
 function isFork(line: PlayedLine, first: Move): boolean {
   const after = line.positions[0];
   if (after === undefined) {
@@ -63,7 +98,7 @@ function isFork(line: PlayedLine, first: Move): boolean {
     (piece) => after.attackers(piece.square, first.color).includes(first.to) && isWorthTarget(after, piece, valueOf(first.piece)),
   );
   const captured = laterCaptureSquares(line);
-  return targets.length >= 2 && targets.some((target) => captured.has(target.square));
+  return targets.length >= 2 && (after.inCheck() || targets.some((target) => captured.has(target.square)));
 }
 
 /** Le premier coup démasque une pièce à longue portée sur un roi ou une pièce de valeur. */
@@ -118,30 +153,59 @@ const MATERIAL_THEMES: readonly (readonly [TacticTheme, (line: PlayedLine, first
   ["discoveredAttack", isDiscoveredAttack],
   ["pin", isPinTactic],
   ["skewer", isSkewerTactic],
+  ["hangingPiece", isLaterHangingCapture],
 ];
 
+/** Mat donné au premier, deuxième ou troisième coup du joueur dans la suite. */
+function mateTheme(line: PlayedLine): TacticTheme | null {
+  const mates: readonly TacticTheme[] = ["mateIn1", "mateIn2", "mateIn3"];
+  const index = mates.findIndex((_, moveNumber) => line.positions[moveNumber * 2]?.isCheckmate() === true);
+  return mates[index] ?? null;
+}
+
+function materialTheme(line: PlayedLine, first: Move): TacticTheme | null {
+  if (materialGain(line) < MIN_THEME_GAIN) {
+    return null;
+  }
+  return MATERIAL_THEMES.find(([, matches]) => matches(line, first))?.[0] ?? null;
+}
+
+/** La bonne réponse évite une perte : ce que le coup de la partie a laissé (voir `blunderThemes.ts`). */
+function defenceTheme(puzzle: ThemedPuzzle, line: PlayedLine): TacticTheme | null {
+  if (puzzle.kind === "allowedMate") {
+    return "allowedMate";
+  }
+  if (puzzle.playedSan === undefined) {
+    return null;
+  }
+  return detectBlunderTheme(puzzle.fen, puzzle.playedSan, Math.max(0, -materialGain(line)), MIN_THEME_GAIN);
+}
+
+/** Ce que lit la détection : la position, la suite du moteur, et si possible le coup joué et le type. */
+export type ThemedPuzzle = Pick<Puzzle, "fen" | "solutionLine"> & Partial<Pick<Puzzle, "playedSan" | "kind">>;
+
 /**
- * Thème d'un problème, lu sur la suite du moteur (meilleur coup puis réponses, 6 demi-coups au
- * plus). Mat en 1 ou 2 d'abord ; sinon, un thème de gain de matériel seulement si la suite gagne
- * au moins 2 pions, dans l'ordre : pièce en prise, fourchette, découverte, clouage, enfilade.
- * Rien de sûr (défense, coup calme, surcharge…) : « autre ».
+ * Thème d'un problème, lu sans moteur sur sa suite gardée (meilleur coup puis réponses, 6
+ * demi-coups au plus) et sur le coup de la partie. Dans l'ordre, le premier qui colle gagne :
+ * 1. mat en 1, 2 ou 3 ;
+ * 2. la suite gagne au moins 2 pions : pièce en prise, fourchette, découverte, clouage, enfilade,
+ *    puis pièce en prise plus loin dans la suite ;
+ * 3. le coup joué perdait : mat à parer, menace ignorée, pièce laissée en prise ;
+ * 4. position de finale : « finale » ; rien de sûr : « autre ».
+ * Calculé à chaque ouverture de la page (rien n'est gardé) : un changement ici reclasse aussi les
+ * problèmes déjà enregistrés.
  */
-export function detectTheme(puzzle: Pick<Puzzle, "fen" | "solutionLine">): TacticTheme {
+export function detectTheme(puzzle: ThemedPuzzle): TacticTheme {
   const line = playLine(puzzle.fen, puzzle.solutionLine);
   const first = line.moves[0];
   if (first === undefined) {
     return "other";
   }
-  if (line.positions[0]?.isCheckmate() === true) {
-    return "mateIn1";
+  const found = mateTheme(line) ?? materialTheme(line, first) ?? defenceTheme(puzzle, line);
+  if (found !== null) {
+    return found;
   }
-  if (line.positions[2]?.isCheckmate() === true) {
-    return "mateIn2";
-  }
-  if (materialGain(line) < MIN_THEME_GAIN) {
-    return "other";
-  }
-  return MATERIAL_THEMES.find(([, matches]) => matches(line, first))?.[0] ?? "other";
+  return phaseOf(puzzle.fen, Number.MAX_SAFE_INTEGER) === "endgame" ? "endgame" : "other";
 }
 
 /** Bilan d'un thème : combien de fois raté en partie (un problème par gaffe), et la réussite à l'entraînement. */
