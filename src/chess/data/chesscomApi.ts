@@ -1,4 +1,4 @@
-import { GAMES_PER_PASS, archivesUrl, parseArchiveGames, parseArchiveList, selectGamesToAnalyse } from "../game/chesscom.ts";
+import { GAMES_PER_PASS, archivesUrl, monthArchiveUrl, parseArchiveGames, parseArchiveList, selectGamesToAnalyse } from "../game/chesscom.ts";
 import type { GameSelection } from "../game/chesscom.ts";
 import type { RawGame } from "../game/types.ts";
 
@@ -74,4 +74,10 @@ export async function fetchGamesToAnalyse(
     }
   }
   return selectGamesToAnalyse(games, analysedIds, sinceEndTime);
+}
+
+/** Relit une partie déjà analysée dans l'archive de son mois ; `null` si le site ne l'a plus. */
+export async function fetchGame(username: string, gameId: string, endTime: number, signal: AbortSignal): Promise<RawGame | null> {
+  const games = parseArchiveGames(await fetchJson(monthArchiveUrl(username, endTime), signal), username);
+  return games.find((game) => game.id === gameId) ?? null;
 }

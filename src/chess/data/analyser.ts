@@ -1,7 +1,7 @@
 import { MAX_SOLUTIONS, buildPuzzle, reviewGame, terminalScore, unusableGame } from "../game/analysis.ts";
 import { MIN_PLIES } from "../game/chesscom.ts";
 import { parseGame } from "../game/pgn.ts";
-import type { AnalysedGame, EngineScore, ParsedGame, Puzzle, PuzzleCandidate, RawGame } from "../game/types.ts";
+import type { AnalysedGame, EngineScore, GameTimeline, ParsedGame, Puzzle, PuzzleCandidate, RawGame } from "../game/types.ts";
 import type { Engine, SearchLimits } from "./engine.ts";
 import type { ChessStore } from "./store.ts";
 
@@ -80,25 +80,39 @@ function report(run: Run): void {
   });
 }
 
-async function scorePosition(engine: Engine, fen: string, isFinal: boolean): Promise<EngineScore> {
+/** Évaluation et meilleur coup d'une position ; une position finale est jugée sans moteur. */
+async function scorePosition(engine: Engine, fen: string, isFinal: boolean): Promise<{ score: EngineScore; bestUci: string }> {
   const finalScore = isFinal ? terminalScore(fen) : null;
   if (finalScore !== null) {
-    return finalScore;
+    return { score: finalScore, bestUci: "" };
   }
   const lines = await engine.analyse(fen, QUICK_SEARCH);
-  return lines[0]?.score ?? { kind: "cp", value: 0 };
+  return { score: lines[0]?.score ?? { kind: "cp", value: 0 }, bestUci: lines[0]?.moveUci ?? "" };
 }
 
-async function scoreGame(engine: Engine, parsed: ParsedGame, run: Run): Promise<EngineScore[]> {
+/**
+ * Évalue chaque position d'une partie (passe rapide) : de quoi juger les coups des deux camps et
+ * garder la revue. `onPosition` est appelé après chaque position, pour la progression.
+ */
+export async function scoreGame(
+  engine: Engine,
+  pgn: string,
+  parsed: ParsedGame,
+  progress: { readonly signal: AbortSignal; readonly onPosition: () => void },
+): Promise<GameTimeline> {
   const fens = [...parsed.moves.map((move) => move.fenBefore), parsed.finalFen];
   const scores: EngineScore[] = [];
+  const bestMoves: string[] = [];
   for (const [index, fen] of fens.entries()) {
-    run.options.signal.throwIfAborted();
-    scores.push(await scorePosition(engine, fen, index === fens.length - 1));
-    run.donePositions += 1;
-    report(run);
+    progress.signal.throwIfAborted();
+    const scored = await scorePosition(engine, fen, index === fens.length - 1);
+    scores.push(scored.score);
+    if (index < parsed.moves.length) {
+      bestMoves.push(scored.bestUci);
+    }
+    progress.onPosition();
   }
-  return scores;
+  return { pgn, scores, bestMoves };
 }
 
 async function toPuzzle(engine: Engine, game: AnalysedGame, candidate: PuzzleCandidate): Promise<Puzzle | null> {
@@ -110,8 +124,15 @@ async function toPuzzle(engine: Engine, game: AnalysedGame, candidate: PuzzleCan
 async function analyseJob(engine: Engine, job: Job, run: Run): Promise<void> {
   const { store, username, signal } = run.options;
   engine.newGame();
-  const scores = await scoreGame(engine, job.parsed, run);
-  const review = reviewGame(job.game, job.parsed, scores, username);
+  const timeline = await scoreGame(engine, job.game.pgn, job.parsed, {
+    signal,
+    onPosition: () => {
+      run.donePositions += 1;
+      report(run);
+    },
+  });
+  const reviewed = reviewGame(job.game, job.parsed, timeline.scores, username);
+  const review = { ...reviewed, analysed: { ...reviewed.analysed, timeline } };
   for (const candidate of review.candidates) {
     signal.throwIfAborted();
     const puzzle = await toPuzzle(engine, review.analysed, candidate);

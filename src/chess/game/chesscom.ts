@@ -38,6 +38,13 @@ export function archivesUrl(username: string): string {
   return `${API_ROOT}/${username}/games/archives`;
 }
 
+/** Archive du mois (UTC) où une partie s'est terminée : de quoi la relire sans parcourir tout l'historique. */
+export function monthArchiveUrl(username: string, endTime: number): string {
+  const end = new Date(endTime * 1000);
+  const month = String(end.getUTCMonth() + 1).padStart(2, "0");
+  return `${API_ROOT}/${username}/games/${end.getUTCFullYear()}/${month}`;
+}
+
 /**
  * Adresses des archives mensuelles, de la plus récente à la plus ancienne. Seules celles du joueur
  * sur l'API officielle sont gardées : on ne suit pas une adresse arbitraire venue d'une réponse.

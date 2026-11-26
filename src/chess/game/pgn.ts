@@ -17,6 +17,29 @@ const ENDGAME_MAX_PIECES = 6;
 
 export const UNKNOWN_OPENING = "Ouverture inconnue";
 
+/** Cadence d'une partie : temps de départ et ajout par coup, en secondes. */
+export interface TimeControl {
+  readonly baseSeconds: number;
+  readonly incrementSeconds: number;
+}
+
+const TIME_CONTROL_PATTERN = /\[TimeControl "(\d+)(?:\+(\d+(?:\.\d+)?))?"\]/;
+
+/** Valeur d'un en-tête du PGN (`White`, `ECOUrl`…), ou `null` s'il manque. */
+export function pgnHeader(pgn: string, name: string): string | null {
+  const match = new RegExp(`\\[${name} "([^"]*)"\\]`).exec(pgn);
+  return match?.[1] ?? null;
+}
+
+/** `180+2` : 3 minutes plus 2 secondes par coup. `null` pour une cadence sans pendule lisible. */
+export function parseTimeControl(pgn: string): TimeControl | null {
+  const match = TIME_CONTROL_PATTERN.exec(pgn);
+  if (match?.[1] === undefined) {
+    return null;
+  }
+  return { baseSeconds: Number(match[1]), incrementSeconds: Number(match[2] ?? 0) };
+}
+
 /** Pendules du PGN, dans l'ordre des demi-coups, en secondes. */
 export function parseClocks(pgn: string): number[] {
   const clocks: number[] = [];
@@ -36,6 +59,10 @@ export function openingFamily(ecoUrl: string | undefined): string {
     return UNKNOWN_OPENING;
   }
   const words = slug.replace(/-\d.*$/, "").split("-").join(" ");
+  // Le site range certaines parties sous « Undefined » : ce n'est pas un nom d'ouverture.
+  if (words === "Undefined") {
+    return UNKNOWN_OPENING;
+  }
   const family = OPENING_FAMILY_END.exec(words);
   if (family?.[1] !== undefined) {
     return family[1];

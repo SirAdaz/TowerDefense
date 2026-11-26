@@ -71,10 +71,29 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 
 - Un bilan par cadence (bullet, blitz, rapide), jamais additionnés. La cadence la plus jouée s'ouvre d'abord.
 - Précision moyenne : moyenne des précisions des parties. Gaffes et erreurs : nombre moyen par partie.
-- Ouvertures : nom de famille tiré de l'adresse `ECOUrl` du PGN (« Sicilian Defense »), les 6 plus jouées (`MAX_OPENINGS`) avec leur part de victoires.
+- Ouvertures : nom de famille tiré de l'adresse `ECOUrl` du PGN (« Sicilian Defense », gardé en anglais), les 6 plus jouées (`MAX_OPENINGS`) avec leur part de victoires, « peu de parties » sous 5 parties (`SMALL_SAMPLE_GAMES`).
+- Pour chaque ouverture (`openingGuide.ts`) : les premiers coups en notation française, pris dans la partie la plus récente qui a gardé son PGN et coupés au dernier coup de la variante lu dans l'adresse ECO (16 demi-coups au plus) ; sinon les coups de base de la table. Une phrase d'explication pour une quarantaine de familles fréquentes ; inconnue : les coups seuls. Bouton « Voir la position » : mini-échiquier de la position d'arrivée.
 - Défaites par phase où la partie a basculé (voir Analyse).
 - Fin de pendule : gaffes et erreurs pour 100 coups joués avec moins de 10 secondes (`LOW_CLOCK_SECONDS`, pendule notée après le coup), comparées au reste des coups.
 - Les parties sans coup évalué (illisibles, trop courtes) ne comptent pas.
+
+## Revue de partie (`gameReview.ts`, `moveClass.ts`)
+
+- Données : à l'analyse, chaque partie garde son PGN, l'évaluation de chaque position et le meilleur coup du moteur (passe rapide, `GameTimeline`, quelques Ko par partie). Une partie analysée avant la revue est relue dans l'archive de son mois sur chess.com et réévaluée à l'ouverture (barre de progression, annulable), puis gardée.
+- Avis sur chaque coup des deux camps, selon les chances de gain perdues par le camp qui joue (points de 0 à 100, formule ci-dessus) :
+
+| Avis | Règle |
+| ---- | ----- |
+| Brillant | sacrifice (pièce laissée en prise contre moins qu'elle, au moins 2 pions de matériel), perte < 2 points, chances avant ≤ 90 % et après ≥ 50 % |
+| Occasion manquée | l'adversaire venait de perdre ≥ 10 points, le coup en perd ≥ 10 sans tomber sous 35 % |
+| Meilleur | le coup du moteur |
+| Excellent / Bon / Imprécision / Erreur / Gaffe | perte < 2 / < 5 / < 10 / < 20 / ≥ 20 points |
+
+- Pas de « coup théorique » : sans livre d'ouvertures, on ne le détecte pas proprement.
+- Précision de chaque joueur : moyenne de la précision de ses coups (même formule que le bilan).
+- Icônes maison : forme, signe d'annotation (!!, !, ?!, ?, ??) et couleur propres à chaque avis, libellé en toutes lettres pour les lecteurs d'écran. Sur le plateau, en coin de la case d'arrivée ; flèche verte du coup du moteur quand le coup joué ne l'était pas.
+- Barre d'évaluation verticale (part du joueur en bas), courbe des chances des blancs cliquable, navigation boutons et flèches du clavier, sons des coups. Jouer sur le plateau ou « Explorer depuis ce coup » ouvre l'exploration (moteur, évaluation, flèche).
+- Temps par coup (`[%clk]` du PGN et cadence `TimeControl`) : pendule d'avant moins pendule d'après, plus l'incrément (sauf au premier coup de chaque camp). Zeitnot : moins de 10 s à la pendule (`ZEITNOT_SECONDS`) ; coup long : au moins 1/15 du temps de départ et 3 s (`LONG_THINK_SHARE`). Liste des coups, graphique sous la courbe et résumé écrit ; sans pendule, la page le dit.
 
 ## Limites connues
 

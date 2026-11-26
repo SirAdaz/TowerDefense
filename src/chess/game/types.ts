@@ -81,6 +81,20 @@ export interface AnalysedGame {
   readonly moves: readonly MoveReview[];
   /** `null` si la partie n'est pas perdue. */
   readonly lostPhase: LostPhase | null;
+  /** De quoi revoir la partie coup par coup ; absent des parties analysées avant la revue (refaite à l'ouverture). */
+  readonly timeline?: GameTimeline;
+}
+
+/**
+ * Revue d'une partie : son PGN (coups, pendules, ouverture, adversaire) et, pour chaque position,
+ * l'évaluation et le meilleur coup du moteur. Quelques Ko par partie.
+ */
+export interface GameTimeline {
+  readonly pgn: string;
+  /** `scores[i]` évalue la position avant le demi-coup `i` (camp au trait) ; le dernier, la position finale. */
+  readonly scores: readonly EngineScore[];
+  /** Meilleur coup du moteur (UCI) dans chaque position avant un demi-coup ; "" s'il manque. */
+  readonly bestMoves: readonly string[];
 }
 
 export type PuzzleKind = "blunder" | "missedMate" | "allowedMate";

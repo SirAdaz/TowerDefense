@@ -1,3 +1,4 @@
+import { UNKNOWN_OPENING } from "./pgn.ts";
 import type { AnalysedGame, LostPhase, MoveReview, TimeClass } from "./types.ts";
 
 /** « Sous 10 secondes » : la pendule du joueur après son coup, telle que le PGN la note. */
@@ -14,7 +15,12 @@ export interface OpeningStat {
   readonly winCount: number;
   /** Part de victoires, de 0 à 100. */
   readonly winRate: number;
+  /** PGN de la partie la plus récente de cette ouverture qui l'a gardé : ses premiers coups illustrent l'ouverture. */
+  readonly pgn: string | null;
 }
+
+/** En dessous de 5 parties, la part de victoires d'une ouverture ne dit presque rien. */
+export const SMALL_SAMPLE_GAMES = 5;
 
 /** Erreurs (gaffes et erreurs) rapportées au nombre de coups joués dans la même situation de pendule. */
 export interface ClockPressure {
@@ -62,15 +68,27 @@ function toPressure(moves: readonly MoveReview[]): ClockPressure {
 
 /** Ouvertures les plus jouées, avec leur part de victoires ; à égalité, ordre alphabétique. */
 export function openingStats(games: readonly AnalysedGame[]): OpeningStat[] {
-  const byName = new Map<string, { gameCount: number; winCount: number }>();
+  const byName = new Map<string, { gameCount: number; winCount: number; pgn: string | null; pgnEndTime: number }>();
   for (const game of games) {
-    const tally = byName.get(game.openingName) ?? { gameCount: 0, winCount: 0 };
+    // Parties gardées avant que « Undefined » (page du site) ne soit lu comme une ouverture inconnue.
+    const name = game.openingName === "Undefined" ? UNKNOWN_OPENING : game.openingName;
+    const tally = byName.get(name) ?? { gameCount: 0, winCount: 0, pgn: null, pgnEndTime: -1 };
     tally.gameCount += 1;
     tally.winCount += game.result === "win" ? 1 : 0;
-    byName.set(game.openingName, tally);
+    if (game.timeline !== undefined && game.endTime > tally.pgnEndTime) {
+      tally.pgn = game.timeline.pgn;
+      tally.pgnEndTime = game.endTime;
+    }
+    byName.set(name, tally);
   }
   return [...byName.entries()]
-    .map(([name, tally]) => ({ name, ...tally, winRate: 100 * ratio(tally.winCount, tally.gameCount) }))
+    .map(([name, tally]) => ({
+      name,
+      gameCount: tally.gameCount,
+      winCount: tally.winCount,
+      winRate: 100 * ratio(tally.winCount, tally.gameCount),
+      pgn: tally.pgn,
+    }))
     .sort((a, b) => b.gameCount - a.gameCount || a.name.localeCompare(b.name))
     .slice(0, MAX_OPENINGS);
 }

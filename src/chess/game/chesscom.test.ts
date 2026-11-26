@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TEST_USER, archiveEntry, rawGame } from "../../../tests/chessFixtures.ts";
-import { archivesUrl, normalizeUsername, parseArchiveGames, parseArchiveList, selectGamesToAnalyse } from "./chesscom.ts";
+import { archivesUrl, monthArchiveUrl, normalizeUsername, parseArchiveGames, parseArchiveList, selectGamesToAnalyse } from "./chesscom.ts";
 
 describe("username", () => {
   it("trims and lowercases", () => {
@@ -106,5 +106,12 @@ describe("choosing the games of a pass", () => {
   it("selects nothing when everything is analysed", () => {
     const selection = selectGamesToAnalyse(games.slice(0, 3), new Set(["game-0", "game-1", "game-2"]), 1000);
     expect(selection).toEqual({ selected: [], remainingCount: 0 });
+  });
+});
+
+describe("month archive", () => {
+  it("pointe l'archive du mois UTC de fin de partie", () => {
+    expect(monthArchiveUrl("joueur-test", 1_768_435_200)).toBe("https://api.chess.com/pub/player/joueur-test/games/2026/01");
+    expect(monthArchiveUrl("joueur-test", 1_798_761_599)).toBe("https://api.chess.com/pub/player/joueur-test/games/2026/12");
   });
 });

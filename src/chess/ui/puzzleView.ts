@@ -10,6 +10,8 @@ import type { BoardArrow } from "./boardOverlay.ts";
 import { createExploreView } from "./exploreView.ts";
 import type { ExploreView } from "./exploreView.ts";
 import { describeDelay, formatDay, TIME_CLASS_NAMES } from "./format.ts";
+import { collectElements } from "./puzzleElements.ts";
+import type { Elements } from "./puzzleElements.ts";
 import { askPromotion, describeCounts, describeEmpty, describeRightMove, describeWrongMove, playUci } from "./puzzleText.ts";
 import type { SoundPlayer } from "./sound.ts";
 
@@ -33,22 +35,6 @@ interface Attempt {
   isOver: boolean;
 }
 
-interface Elements {
-  readonly trainer: HTMLElement;
-  readonly empty: HTMLElement;
-  readonly counts: HTMLElement;
-  readonly prompt: HTMLElement;
-  readonly origin: HTMLElement;
-  readonly feedback: HTMLElement;
-  readonly hint: HTMLButtonElement;
-  readonly solution: HTMLButtonElement;
-  readonly next: HTMLButtonElement;
-  readonly debrief: HTMLElement;
-  readonly played: HTMLElement;
-  readonly line: HTMLElement;
-  readonly schedule: HTMLElement;
-  readonly link: HTMLAnchorElement;
-}
 
 /** Séance en cours : la file des problèmes à faire, celui affiché et où en est la tentative. */
 interface Session {
@@ -62,6 +48,8 @@ interface Session {
   attempt: Attempt;
   /** Minuteries en cours (retour de la pièce, annonce) : annulées dès que le problème change d'état. */
   timers: number[];
+  /** Coup qui a clos le problème (trouvé ou solution) : « Continuer à jouer » repart de là. */
+  solvedUci: string;
 }
 
 /** Un coup refusé reste ce temps sur le plateau, en rouge, avant que la pièce revienne à sa place. */
@@ -73,24 +61,6 @@ const SUCCESS_SOUND_DELAY_MS = 180;
 /** Vider puis réécrire le message : deux erreurs identiques de suite sont relues aux lecteurs d'écran. */
 const ANNOUNCE_DELAY_MS = 60;
 
-function collectElements(): Elements {
-  return {
-    trainer: requireElement("trainer", HTMLElement),
-    empty: requireElement("puzzle-empty", HTMLElement),
-    counts: requireElement("puzzle-counts", HTMLElement),
-    prompt: requireElement("puzzle-prompt", HTMLElement),
-    origin: requireElement("puzzle-origin", HTMLElement),
-    feedback: requireElement("puzzle-feedback", HTMLElement),
-    hint: requireElement("hint", HTMLButtonElement),
-    solution: requireElement("solution", HTMLButtonElement),
-    next: requireElement("next", HTMLButtonElement),
-    debrief: requireElement("puzzle-debrief", HTMLElement),
-    played: requireElement("puzzle-played", HTMLElement),
-    line: requireElement("puzzle-line", HTMLElement),
-    schedule: requireElement("puzzle-schedule", HTMLElement),
-    link: requireElement("puzzle-link", HTMLAnchorElement),
-  };
-}
 
 function newAttempt(): Attempt {
   return { hasFailed: false, hasHint: false, isOver: false };
@@ -185,7 +155,8 @@ function finish(session: Session, puzzle: Puzzle, playedUci: string, isFound: bo
   setText(elements.line, `Meilleure suite : ${formatLine(puzzle.fen, puzzle.solutionLine)}`);
   setText(elements.schedule, `Ce problème reviendra ${describeDelay(review.dueAt, options.now())}.`);
   elements.link.href = puzzle.gameUrl;
-  session.explore.open(reviewed, playedUci);
+  session.solvedUci = playedUci;
+  session.explore.open(reviewed);
   setSolvingControls(elements, false);
   elements.next.focus();
   renderCounts(session);
@@ -283,6 +254,26 @@ function revealSolution(session: Session): void {
   finish(session, session.current, bestMove.uci, false);
 }
 
+function attachExploreButtons(session: Session): void {
+  const actions: Readonly<Record<string, () => void>> = {
+    "explore-continue": () => {
+      session.explore.continueWith(session.solvedUci);
+    },
+    "explore-line": () => {
+      session.explore.showLine();
+    },
+    "explore-game": () => {
+      session.explore.showGameMove();
+    },
+    "explore-reset": () => {
+      session.explore.reset();
+    },
+  };
+  Object.entries(actions).forEach(([id, action]) => {
+    requireElement(id, HTMLButtonElement).addEventListener("click", action);
+  });
+}
+
 /** L'entraîneur : un problème à la fois, tiré des gaffes du joueur, puis sa correction. */
 export function createPuzzleView(options: PuzzleViewOptions): PuzzleView {
   const elements = collectElements();
@@ -294,7 +285,7 @@ export function createPuzzleView(options: PuzzleViewOptions): PuzzleView {
     },
     choosePromotion: () => askPromotion(promotionDialog),
   });
-  const explore = createExploreView({ board, sound: options.sound, engine: options.engine });
+  const explore = createExploreView({ board, sound: options.sound, engine: options.engine, prefix: "explore", root: elements.trainer });
   const session: Session = {
     options,
     elements,
@@ -305,7 +296,9 @@ export function createPuzzleView(options: PuzzleViewOptions): PuzzleView {
     current: null,
     attempt: newAttempt(),
     timers: [],
+    solvedUci: "",
   };
+  attachExploreButtons(session);
 
   elements.hint.addEventListener("click", () => {
     giveHint(session);
