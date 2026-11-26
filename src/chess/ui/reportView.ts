@@ -3,6 +3,7 @@ import { LOW_CLOCK_SECONDS, TIME_CLASSES, buildReport } from "../game/report.ts"
 import type { ClockPressure, TimeClassReport } from "../game/report.ts";
 import type { AnalysedGame, LostPhase, TimeClass } from "../game/types.ts";
 import { TIME_CLASS_NAMES, formatDecimal, pluralize } from "./format.ts";
+import { openingCell, winRateCell } from "./openingView.ts";
 
 export interface ReportView {
   /** Donne les parties analysées du joueur ; le bilan affiché est recalculé. */
@@ -74,12 +75,7 @@ function renderStats(container: HTMLElement, report: TimeClassReport): void {
 function renderOpenings(tableBody: HTMLElement, report: TimeClassReport): void {
   const rows = report.openings.map((opening) => {
     const row = document.createElement("tr");
-    row.append(
-      element("th", "", opening.name),
-      element("td", "number", String(opening.gameCount)),
-      element("td", "number", `${Math.round(opening.winRate)} %`),
-    );
-    row.firstElementChild?.setAttribute("scope", "row");
+    row.append(openingCell(opening), element("td", "number", String(opening.gameCount)), winRateCell(opening));
     return row;
   });
   tableBody.replaceChildren(...rows);
