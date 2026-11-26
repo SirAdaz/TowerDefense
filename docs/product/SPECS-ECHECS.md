@@ -95,6 +95,14 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - Ces forces ne sont pas étalonnées en Elo : « Facile » est un choix de départ, à ajuster selon le ressenti.
 - Explorer après l'exercice : « Rejouer votre coup de la partie » (gaffe et réfutation) et « Rejouer depuis le départ ».
 
+## Voir la menace (`threats.ts`, `defense.ts`)
+
+- Positions : chaque gaffe du joueur, position d'avant la gaffe, à condition qu'elle ait laissé passer une menace concrète déjà présente. On prend le coup qui l'a punie (meilleur coup du moteur après la gaffe, gardé pour la revue) et on le rejoue dans la position d'avant, le joueur « passant » son tour : il doit y être légal et être soit un mat, soit une prise gagnante (pièce prise non défendue, ou qui vaut plus que celle qui prend ; valeurs 1/3/3/5/9). Une menace créée par la gaffe elle-même (pièce déplacée en prise) ne compte pas ; joueur en échec : pas de problème.
+- Il faut le PGN et les meilleurs coups gardés pour la revue : les parties analysées avant sont signalées « à relire ».
+- Étape 1, « Que menace l'adversaire ? » : désigner (clic, doigt, ou flèches puis Entrée) la pièce qui menace ou la case menacée. Une mauvaise case compte comme raté mais on peut continuer ; « Voir la menace » la montre (raté).
+- Étape 2, la parade : le coup de la partie est refusé, le meilleur coup du moteur accepté ; tout autre coup est évalué par le moteur (recherche de l'exploration) et accepté s'il n'est ni une erreur ni une gaffe par rapport à l'évaluation d'avant la gaffe (barème de l'Analyse). Un mat donné est accepté. Refusé : il reste 0,7 s en rouge puis la pièce revient. « Voir une parade » joue le coup du moteur (raté).
+- Réussi sans faute ni aide : délai suivant de la révision espacée ; sinon, raté.
+
 ## Stockage
 
 - IndexedDB `echecs`, version 2 : parties, problèmes, et états de révision des exercices (`drills`, un état par exercice ; l'exercice lui-même se reconstruit à partir des parties). La montée depuis la version 1 ne fait qu'ajouter la table : parties et problèmes restent.
