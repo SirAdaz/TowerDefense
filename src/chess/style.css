@@ -1201,3 +1201,8 @@ progress::-moz-progress-bar {
   border: 1px dashed var(--line);
   border-radius: 8px;
 }
+
+/* Voir la menace : en mode « désigner une case », chaque case se vise. */
+.board.is-picking .square {
+  cursor: crosshair;
+}

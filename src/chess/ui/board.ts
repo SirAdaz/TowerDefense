@@ -23,6 +23,8 @@ export interface BoardPosition {
   readonly marks?: readonly SquareMark[];
   /** Avis sur le dernier coup (revue de partie). */
   readonly badge?: BoardBadge;
+  /** Vrai : on désigne une case (« que menace l'adversaire ? ») au lieu de jouer un coup. */
+  readonly isPickingSquare?: boolean;
 }
 
 export interface SquareMark {
@@ -36,6 +38,8 @@ export interface BoardOptions {
   readonly onMove: (uci: string) => void;
   /** Demande la pièce de promotion (`q`, `r`, `b`, `n`), ou `null` si le joueur renonce. */
   readonly choosePromotion: () => Promise<string | null>;
+  /** Case désignée quand la position est en mode `isPickingSquare`. */
+  readonly onSquare?: (square: string) => void;
 }
 
 export interface BoardView {
@@ -181,6 +185,10 @@ export function createBoard(options: BoardOptions): BoardView {
 
   attachBoardInput(options.root, {
     press: (square) => {
+      if (state.position.isPickingSquare === true) {
+        options.onSquare?.(square);
+        return false;
+      }
       if (state.targets.has(square)) {
         void playTo(square);
         return false;
@@ -201,6 +209,7 @@ export function createBoard(options: BoardOptions): BoardView {
       state.position = position;
       state.chess = new Chess(position.fen);
       drawArrows(arrowLayer, position.arrows ?? [], position.orientation, position.badge ?? null);
+      options.root.classList.toggle("is-picking", position.isPickingSquare === true);
       select(null);
     },
     shake: () => {

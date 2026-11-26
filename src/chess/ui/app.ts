@@ -8,8 +8,11 @@ import { createExploreEngine } from "../data/exploreEngine.ts";
 import type { ChessStore } from "../data/store.ts";
 import { normalizeUsername } from "../game/chesscom.ts";
 import { selectConversionDrills } from "../game/conversion.ts";
+import { selectDefenseDrills } from "../game/defense.ts";
 import { createConvertView } from "./convertView.ts";
 import type { ConvertView } from "./convertView.ts";
+import { createDefendView } from "./defendView.ts";
+import type { DefendView } from "./defendView.ts";
 import { createPrepareControl } from "./prepareGames.ts";
 import type { PrepareControl } from "./prepareGames.ts";
 import { countSolved, forgetUsername, loadUsername, saveSolvedCount, saveUsername } from "../game/summary.ts";
@@ -47,6 +50,8 @@ interface App {
   readonly reviewView: ReviewView;
   readonly convertView: ConvertView;
   readonly convertPrepare: PrepareControl;
+  readonly defendView: DefendView;
+  readonly defendPrepare: PrepareControl;
   username: string | null;
   /** Présent pendant une analyse : sert à l'annuler, et à refuser d'en lancer deux. */
   abortController: AbortController | null;
@@ -87,6 +92,9 @@ async function refreshPuzzles(app: App): Promise<void> {
   const conversion = selectConversionDrills(games, puzzles, drillReviews);
   app.convertView.setDrills(conversion.drills, games.length > 0);
   app.convertPrepare.setGames(conversion.gamesToPrepare);
+  const defense = selectDefenseDrills(games, drillReviews);
+  app.defendView.setDrills(defense.drills, games.length > 0);
+  app.defendPrepare.setGames(defense.gamesToPrepare);
   if (app.username !== null) {
     saveSolvedCount(app.keyValueStore, countSolved(puzzles));
   }
@@ -245,6 +253,22 @@ export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void 
     }),
     convertPrepare: createPrepareControl({
       prefix: "convert-prepare",
+      store,
+      startEngine,
+      onGameReady: () => {
+        void refreshPuzzles(app);
+      },
+    }),
+    defendView: createDefendView({
+      now: () => Date.now(),
+      sound,
+      engine: exploreEngine,
+      onReviewed: (drillReview) => {
+        void store.saveDrillReview(drillReview).then(() => refreshPuzzles(app));
+      },
+    }),
+    defendPrepare: createPrepareControl({
+      prefix: "defend-prepare",
       store,
       startEngine,
       onGameReady: () => {

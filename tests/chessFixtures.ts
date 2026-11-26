@@ -31,6 +31,21 @@ export const MISSED_MATE_PGN =
   headers(TEST_USER, TEST_OPPONENT, "1/2-1/2", "https://www.chess.com/openings/Kings-Pawn-Opening-Wayward-Queen-Attack-2...Nc6") +
   "1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Nc3 g6 5. Qf3 1/2-1/2\n";
 
+/** Le joueur (noirs) ignore la menace de mat 6. Dxf7# et joue 5...b6 ??. */
+export const IGNORED_MATE_PGN =
+  headers(TEST_OPPONENT, TEST_USER, "1-0", "https://www.chess.com/openings/Vienna-Game") +
+  "1. e4 e5 2. Nc3 Nc6 3. Bc4 a6 4. d3 h6 5. Qh5 b6 6. Qxf7# 1-0\n";
+
+/** Le joueur (noirs) laisse son cavalier attaqué par le pion : 2...d6 ?? 3. exf6. */
+export const IGNORED_PIECE_PGN =
+  headers(TEST_OPPONENT, TEST_USER, "1-0", "https://www.chess.com/openings/Alekhines-Defense") +
+  "1. e4 Nf6 2. e5 d6 3. exf6 exf6 4. d4 d5 5. Nf3 Bd6 6. Bd3 O-O 7. O-O Re8 1-0\n";
+
+/** Le joueur (blancs), une pièce de plus, met sa dame en prise : 6. De4 ?? dxe4. Aucune menace avant. */
+export const QUEEN_DROP_PGN =
+  headers(TEST_USER, TEST_OPPONENT, "0-1", "https://www.chess.com/openings/Queens-Pawn-Opening") +
+  "1. d4 d5 2. Bf4 Nf6 3. e3 Nh5 4. Qxh5 e6 5. Qf3 Bd6 6. Qe4 dxe4 7. Bxd6 Qxd6 0-1\n";
+
 /** Partie sans horloge ni adresse d'ouverture. */
 export const BARE_PGN = '[Event "?"]\n[Result "*"]\n\n1. d4 d5 2. c4 e6 *\n';
 

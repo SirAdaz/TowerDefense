@@ -151,6 +151,73 @@
           </div>
         </section>
 
+        <section id="defend" class="panel" aria-labelledby="defend-title" hidden>
+          <div class="panel-head">
+            <h2 id="defend-title">Voir la menace</h2>
+            <p id="defend-counts" class="counts"></p>
+          </div>
+          <p class="hint">
+            Avant ces gaffes, l'adversaire menaçait déjà de gagner une pièce ou de mater. D'abord, désignez la pièce qui menace ou
+            ce qu'elle menace ; puis jouez une parade : tout coup qui garde la position convient.
+          </p>
+
+          <div id="defend-prepare" class="prepare" hidden>
+            <p id="defend-prepare-text"></p>
+            <div class="actions">
+              <button id="defend-prepare-start" type="button" class="btn">Relire ces parties</button>
+            </div>
+            <div id="defend-prepare-progress" class="progress" hidden>
+              <label for="defend-prepare-bar" id="defend-prepare-label">Relecture des parties</label>
+              <progress id="defend-prepare-bar" max="1" value="0"></progress>
+              <button id="defend-prepare-cancel" type="button" class="btn">Annuler</button>
+            </div>
+            <p id="defend-prepare-status" class="status" role="status" aria-live="polite"></p>
+          </div>
+
+          <p id="defend-empty" class="empty"></p>
+
+          <div id="defend-trainer" class="trainer" hidden>
+            <div class="board-wrap">
+              <div id="defend-board" class="board" role="group" aria-label="Échiquier de la menace" aria-describedby="defend-board-help"></div>
+              <div id="defend-explore-panel" class="explore-panel" hidden>
+                <p id="defend-explore-mode" class="hint"></p>
+                <div class="explore-nav">
+                  <button id="defend-explore-prev" type="button" class="btn"><span aria-hidden="true">←</span> Coup précédent</button>
+                  <button id="defend-explore-next" type="button" class="btn">Coup suivant <span aria-hidden="true">→</span></button>
+                </div>
+                <p id="defend-explore-step" aria-live="polite"></p>
+                <div class="eval-bar" aria-hidden="true"><div id="defend-explore-eval-fill" class="eval-fill"></div></div>
+                <p id="defend-explore-eval" aria-live="polite"></p>
+              </div>
+              <p id="defend-board-help" class="sr-only"></p>
+            </div>
+
+            <div class="trainer-side">
+              <p id="defend-prompt" class="prompt"></p>
+              <p id="defend-origin" class="hint"></p>
+              <p id="defend-feedback" class="feedback" role="status" aria-live="polite"></p>
+              <div class="actions">
+                <button id="defend-reveal" type="button" class="btn">Voir la menace</button>
+                <button id="defend-next" type="button" class="btn btn-primary" hidden>Problème suivant</button>
+              </div>
+              <div id="defend-debrief" class="debrief" hidden>
+                <p id="defend-played"></p>
+                <p id="defend-schedule" class="hint"></p>
+                <p><a id="defend-link" href="https://www.chess.com/" target="_blank" rel="noopener noreferrer">Voir la partie sur chess.com</a></p>
+
+                <div class="explore" role="group" aria-labelledby="defend-explore-title">
+                  <h3 id="defend-explore-title">Comprendre la position</h3>
+                  <div class="actions">
+                    <button id="defend-explore-continue" type="button" class="btn">Continuer à jouer</button>
+                    <button id="defend-explore-game" type="button" class="btn">Rejouer votre coup</button>
+                    <button id="defend-explore-reset" type="button" class="btn">Revenir à la position</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="report" class="panel" aria-labelledby="report-title" hidden>
           <div class="panel-head">
             <h2 id="report-title">Bilan</h2>
