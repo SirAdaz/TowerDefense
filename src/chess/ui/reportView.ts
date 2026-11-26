@@ -1,9 +1,12 @@
 import { requireElement, setText } from "../../shared/dom.ts";
+import { weeklyProgress } from "../game/progress.ts";
 import { LOW_CLOCK_SECONDS, TIME_CLASSES, buildReport } from "../game/report.ts";
 import type { ClockPressure, TimeClassReport } from "../game/report.ts";
 import type { AnalysedGame, LostPhase, TimeClass } from "../game/types.ts";
 import { TIME_CLASS_NAMES, formatDecimal, pluralize } from "./format.ts";
 import { openingCell, winRateCell } from "./openingView.ts";
+import { createProgressView } from "./progressView.ts";
+import type { ProgressView } from "./progressView.ts";
 
 export interface ReportView {
   /** Donne les parties analysées du joueur ; le bilan affiché est recalculé. */
@@ -20,6 +23,7 @@ interface Elements {
   readonly lostTitle: HTMLElement;
   readonly lostPhases: HTMLElement;
   readonly clock: HTMLElement;
+  readonly progress: ProgressView;
 }
 
 const PHASE_NAMES: Readonly<Record<LostPhase, string>> = {
@@ -43,6 +47,7 @@ function collectElements(): Elements {
     lostTitle: requireElement("report-lost-title", HTMLElement),
     lostPhases: requireElement("report-lost", HTMLElement),
     clock: requireElement("report-clock", HTMLElement),
+    progress: createProgressView(),
   };
 }
 
@@ -127,6 +132,8 @@ function render(elements: Elements, games: readonly AnalysedGame[], timeClass: T
     return;
   }
   renderStats(elements.stats, report);
+  // Semaines calées sur l'heure du joueur : une partie du dimanche soir reste dans sa semaine.
+  elements.progress.render(weeklyProgress(games, timeClass, new Date().getTimezoneOffset()), timeClass);
   renderOpenings(elements.openings, report);
   renderLostPhases(elements, report);
   setText(elements.clock, describeClock(report.lowClock, report.otherClock));
