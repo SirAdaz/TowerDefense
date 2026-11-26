@@ -3,6 +3,8 @@ import type { Square } from "chess.js";
 import { FILES, squareAt, squareLabel } from "../game/notation.ts";
 import type { PlayerColor } from "../game/types.ts";
 import { attachBoardInput } from "./boardInput.ts";
+import { createArrowLayer, drawArrows } from "./boardOverlay.ts";
+import type { BoardArrow } from "./boardOverlay.ts";
 import { createPiece } from "./pieces.ts";
 
 /** Ce que le plateau montre : une position, vue d'un camp, avec ses repères. */
@@ -15,6 +17,15 @@ export interface BoardPosition {
   readonly hintSquare: string | null;
   /** Faux : le plateau se regarde, les pièces ne bougent plus. */
   readonly isInteractive: boolean;
+  /** Coups dessinés en flèches (solution, meilleur coup du moteur). */
+  readonly arrows?: readonly BoardArrow[];
+  /** Cases colorées un instant : coup refusé (`error`) ou trouvé (`success`). */
+  readonly marks?: readonly SquareMark[];
+}
+
+export interface SquareMark {
+  readonly square: string;
+  readonly tone: "error" | "success";
 }
 
 export interface BoardOptions {
@@ -27,6 +38,10 @@ export interface BoardOptions {
 
 export interface BoardView {
   show(position: BoardPosition): void;
+  /** Secoue le plateau après un coup refusé (sauf si le joueur limite les animations, voir le CSS). */
+  shake(): void;
+  /** Redessine les flèches sans toucher aux pièces ni à la case choisie (réponse du moteur arrivée après coup). */
+  setArrows(arrows: readonly BoardArrow[]): void;
 }
 
 interface BoardState {
@@ -102,6 +117,20 @@ function renderSquare(button: HTMLButtonElement, index: number, state: BoardStat
   button.classList.toggle("is-capture", isTarget && piece !== null);
   button.classList.toggle("is-last-move", lastMove.slice(0, 2) === square || lastMove.slice(2, 4) === square);
   button.classList.toggle("is-hint", state.position.hintSquare === square);
+  applyMark(button, square, state.position.marks ?? []);
+}
+
+function applyMark(button: HTMLButtonElement, square: string, marks: readonly SquareMark[]): void {
+  const tone = marks.find((mark) => mark.square === square)?.tone;
+  button.classList.toggle("is-error", tone === "error");
+  button.classList.toggle("is-success", tone === "success");
+}
+
+function shakeBoard(root: HTMLElement): void {
+  root.classList.remove("is-shaking");
+  // Relire la taille relance l'animation quand deux mauvais coups se suivent.
+  void root.offsetWidth;
+  root.classList.add("is-shaking");
 }
 
 /**
@@ -110,6 +139,10 @@ function renderSquare(button: HTMLButtonElement, index: number, state: BoardStat
  */
 export function createBoard(options: BoardOptions): BoardView {
   const buttons = createSquares(options.root);
+  const arrowLayer = createArrowLayer(options.root);
+  options.root.addEventListener("animationend", () => {
+    options.root.classList.remove("is-shaking");
+  });
   const state: BoardState = { chess: new Chess(), position: EMPTY_POSITION, selected: null, targets: new Set() };
 
   const render = () => {
@@ -165,7 +198,14 @@ export function createBoard(options: BoardOptions): BoardView {
     show: (position) => {
       state.position = position;
       state.chess = new Chess(position.fen);
+      drawArrows(arrowLayer, position.arrows ?? [], position.orientation);
       select(null);
+    },
+    shake: () => {
+      shakeBoard(options.root);
+    },
+    setArrows: (arrows) => {
+      drawArrows(arrowLayer, arrows, state.position.orientation);
     },
   };
 }

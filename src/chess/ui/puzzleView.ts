@@ -1,17 +1,25 @@
 import { requireElement, setText } from "../../shared/dom.ts";
+import type { ExploreEngine } from "../data/exploreEngine.ts";
 import { formatLine, frenchSan } from "../game/notation.ts";
 import { applyReview, selectSession } from "../game/schedule.ts";
 import type { ReviewOutcome } from "../game/schedule.ts";
 import type { Puzzle } from "../game/types.ts";
 import { createBoard } from "./board.ts";
 import type { BoardView } from "./board.ts";
+import type { BoardArrow } from "./boardOverlay.ts";
+import { createExploreView } from "./exploreView.ts";
+import type { ExploreView } from "./exploreView.ts";
 import { describeDelay, formatDay, TIME_CLASS_NAMES } from "./format.ts";
 import { askPromotion, describeCounts, describeEmpty, describeRightMove, describeWrongMove, playUci } from "./puzzleText.ts";
+import type { SoundPlayer } from "./sound.ts";
 
 export interface PuzzleViewOptions {
   /** Garde le nouvel état de révision d'un problème. */
   readonly onReviewed: (puzzle: Puzzle) => void;
   readonly now: () => number;
+  readonly sound: SoundPlayer;
+  /** Moteur de l'exploration d'après problème, lancé au premier besoin. */
+  readonly engine: ExploreEngine;
 }
 
 export interface PuzzleView {
@@ -47,11 +55,23 @@ interface Session {
   readonly options: PuzzleViewOptions;
   readonly elements: Elements;
   readonly board: BoardView;
+  readonly explore: ExploreView;
   puzzles: readonly Puzzle[];
   queue: Puzzle[];
   current: Puzzle | null;
   attempt: Attempt;
+  /** Minuteries en cours (retour de la pièce, annonce) : annulées dès que le problème change d'état. */
+  timers: number[];
 }
+
+/** Un coup refusé reste ce temps sur le plateau, en rouge, avant que la pièce revienne à sa place. */
+const WRONG_MOVE_MS = 700;
+
+/** Le son de réussite suit celui du coup, comme une ponctuation. */
+const SUCCESS_SOUND_DELAY_MS = 180;
+
+/** Vider puis réécrire le message : deux erreurs identiques de suite sont relues aux lecteurs d'écran. */
+const ANNOUNCE_DELAY_MS = 60;
 
 function collectElements(): Elements {
   return {
@@ -87,12 +107,36 @@ function isSolving(session: Session): boolean {
   return session.current !== null && !session.attempt.isOver;
 }
 
+function later(session: Session, action: () => void, delayMs: number): void {
+  session.timers.push(window.setTimeout(action, delayMs));
+}
+
+function clearTimers(session: Session): void {
+  session.timers.forEach((timer) => {
+    window.clearTimeout(timer);
+  });
+  session.timers = [];
+}
+
+function announce(session: Session, text: string): void {
+  setText(session.elements.feedback, "");
+  later(
+    session,
+    () => {
+      setText(session.elements.feedback, text);
+    },
+    ANNOUNCE_DELAY_MS,
+  );
+}
+
 function renderCounts(session: Session): void {
   const dueCount = session.queue.length + (isSolving(session) ? 1 : 0);
   setText(session.elements.counts, describeCounts(session.puzzles, dueCount));
 }
 
-function showPuzzlePosition(session: Session, puzzle: Puzzle, hintSquare: string | null): void {
+/** La position du problème, prête à jouer ; la case de l'indice reste en vue une fois demandée. */
+function showPuzzlePosition(session: Session, puzzle: Puzzle): void {
+  const hintSquare = session.attempt.hasHint ? (puzzle.solutions[0]?.uci.slice(0, 2) ?? null) : null;
   session.board.show({
     fen: puzzle.fen,
     orientation: puzzle.playerColor,
@@ -109,44 +153,96 @@ function setSolvingControls(elements: Elements, isSolvingNow: boolean): void {
   elements.next.hidden = isSolvingNow;
 }
 
+/** Flèche du meilleur coup quand le joueur en a trouvé un autre qui le vaut (ou quand la solution est montrée). */
+function bestMoveArrows(puzzle: Puzzle, playedUci: string, isFound: boolean): BoardArrow[] {
+  const bestMove = puzzle.solutions[0];
+  if (bestMove === undefined || (isFound && bestMove.uci === playedUci)) {
+    return [];
+  }
+  return [{ uci: bestMove.uci, tone: "best" }];
+}
+
 /** Clôt la tentative : le résultat est gardé, la correction s'affiche avec le coup joué sur le plateau. */
-function finish(session: Session, puzzle: Puzzle, playedUci: string): void {
+function finish(session: Session, puzzle: Puzzle, playedUci: string, isFound: boolean): void {
   const { elements, options } = session;
+  clearTimers(session);
   session.attempt.isOver = true;
   const review = applyReview(puzzle.review, outcomeOf(session.attempt), options.now());
   const reviewed: Puzzle = { ...puzzle, review };
   session.puzzles = session.puzzles.map((candidate) => (candidate.id === reviewed.id ? reviewed : candidate));
   options.onReviewed(reviewed);
   const fen = playUci(puzzle.fen, playedUci)?.fen ?? puzzle.fen;
-  session.board.show({ fen, orientation: puzzle.playerColor, lastMoveUci: playedUci, hintSquare: null, isInteractive: false });
+  session.board.show({
+    fen,
+    orientation: puzzle.playerColor,
+    lastMoveUci: playedUci,
+    hintSquare: null,
+    isInteractive: false,
+    arrows: bestMoveArrows(puzzle, playedUci, isFound),
+    marks: isFound ? [{ square: playedUci.slice(2, 4), tone: "success" }] : [],
+  });
   setText(elements.played, `Dans la partie, vous aviez joué ${frenchSan(puzzle.playedSan)}.`);
   setText(elements.line, `Meilleure suite : ${formatLine(puzzle.fen, puzzle.solutionLine)}`);
   setText(elements.schedule, `Ce problème reviendra ${describeDelay(review.dueAt, options.now())}.`);
   elements.link.href = puzzle.gameUrl;
+  session.explore.open(reviewed, playedUci);
   setSolvingControls(elements, false);
   elements.next.focus();
   renderCounts(session);
 }
 
+/** Coup refusé : il reste un instant en rouge, le plateau tremble, puis la pièce revient à sa place. */
+function rejectMove(session: Session, puzzle: Puzzle, uci: string): void {
+  const played = playUci(puzzle.fen, uci);
+  clearTimers(session);
+  session.attempt.hasFailed = true;
+  session.options.sound.play("error");
+  announce(session, describeWrongMove(puzzle, played?.san ?? uci));
+  session.board.show({
+    fen: played?.fen ?? puzzle.fen,
+    orientation: puzzle.playerColor,
+    lastMoveUci: null,
+    hintSquare: null,
+    isInteractive: false,
+    marks: [
+      { square: uci.slice(0, 2), tone: "error" },
+      { square: uci.slice(2, 4), tone: "error" },
+    ],
+  });
+  session.board.shake();
+  later(
+    session,
+    () => {
+      showPuzzlePosition(session, puzzle);
+    },
+    WRONG_MOVE_MS,
+  );
+}
+
 function handleMove(session: Session, uci: string): void {
+  if (session.explore.handleMove(uci)) {
+    return;
+  }
   const puzzle = session.current;
   if (puzzle === null || session.attempt.isOver) {
     return;
   }
-  const moveName = playUci(puzzle.fen, uci)?.san ?? uci;
   if (!puzzle.solutions.some((solution) => solution.uci === uci)) {
-    session.attempt.hasFailed = true;
-    setText(session.elements.feedback, describeWrongMove(puzzle, moveName));
-    showPuzzlePosition(session, puzzle, null);
+    rejectMove(session, puzzle, uci);
     return;
   }
-  setText(session.elements.feedback, describeRightMove(puzzle, uci, moveName));
-  finish(session, puzzle, uci);
+  const played = playUci(puzzle.fen, uci);
+  session.options.sound.play(played?.sound ?? "move");
+  session.options.sound.play("success", SUCCESS_SOUND_DELAY_MS);
+  setText(session.elements.feedback, describeRightMove(puzzle, uci, played?.san ?? uci));
+  finish(session, puzzle, uci, true);
 }
 
 function showNext(session: Session): void {
   const { elements, options } = session;
   const puzzle = session.queue.shift() ?? null;
+  clearTimers(session);
+  session.explore.close();
   session.current = puzzle;
   session.attempt = newAttempt();
   elements.trainer.hidden = puzzle === null;
@@ -162,7 +258,7 @@ function showNext(session: Session): void {
   setText(elements.origin, `Position tirée de votre partie ${TIME_CLASS_NAMES[puzzle.timeClass]} du ${gameDay}.`);
   setText(elements.feedback, "");
   setSolvingControls(elements, true);
-  showPuzzlePosition(session, puzzle, null);
+  showPuzzlePosition(session, puzzle);
 }
 
 function giveHint(session: Session): void {
@@ -170,9 +266,10 @@ function giveHint(session: Session): void {
   if (session.current === null || origin === undefined || session.attempt.isOver) {
     return;
   }
+  clearTimers(session);
   session.attempt.hasHint = true;
-  setText(session.elements.feedback, `Indice : la pièce à jouer est en ${origin}.`);
-  showPuzzlePosition(session, session.current, origin);
+  setText(session.elements.feedback, `Indice : la pièce à jouer est en ${origin}, entourée sur le plateau.`);
+  showPuzzlePosition(session, session.current);
 }
 
 function revealSolution(session: Session): void {
@@ -181,8 +278,9 @@ function revealSolution(session: Session): void {
     return;
   }
   session.attempt.hasFailed = true;
-  setText(session.elements.feedback, `Solution : ${frenchSan(bestMove.san)}.`);
-  finish(session, session.current, bestMove.uci);
+  session.options.sound.play(playUci(session.current.fen, bestMove.uci)?.sound ?? "move");
+  setText(session.elements.feedback, `Solution : ${frenchSan(bestMove.san)}, en flèche sur le plateau.`);
+  finish(session, session.current, bestMove.uci, false);
 }
 
 /** L'entraîneur : un problème à la fois, tiré des gaffes du joueur, puis sa correction. */
@@ -196,7 +294,18 @@ export function createPuzzleView(options: PuzzleViewOptions): PuzzleView {
     },
     choosePromotion: () => askPromotion(promotionDialog),
   });
-  const session: Session = { options, elements, board, puzzles: [], queue: [], current: null, attempt: newAttempt() };
+  const explore = createExploreView({ board, sound: options.sound, engine: options.engine });
+  const session: Session = {
+    options,
+    elements,
+    board,
+    explore,
+    puzzles: [],
+    queue: [],
+    current: null,
+    attempt: newAttempt(),
+    timers: [],
+  };
 
   elements.hint.addEventListener("click", () => {
     giveHint(session);

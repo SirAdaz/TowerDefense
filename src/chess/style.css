@@ -15,6 +15,15 @@
   --piece-white: #fffdf6;
   --piece-black: #26211d;
   --mark: #1d6fd6;
+  /* Flèches : un contour sombre les détache des cases claires comme des foncées. */
+  --arrow-best: #33a862;
+  --arrow-best-edge: #052a14;
+  --arrow-played: #e0533f;
+  --arrow-played-edge: #3b0903;
+  --square-error: #f0907f;
+  --square-error-dark: #cf5546;
+  --square-success: #a9dc8a;
+  --square-success-dark: #6cab52;
   color-scheme: dark;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 16px;
@@ -269,6 +278,7 @@ progress::-moz-progress-bar {
 }
 
 .board {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   aspect-ratio: 1;
@@ -321,7 +331,109 @@ progress::-moz-progress-bar {
 }
 
 .square.is-hint {
-  box-shadow: inset 0 0 0 5px #0d8a4f;
+  box-shadow:
+    inset 0 0 0 5px #0d8a4f,
+    inset 0 0 0 8px #ffffff;
+}
+
+/* Coup refusé ou trouvé : la case change de teinte et porte un signe (croix, coche), pas seulement une couleur. */
+.square.is-error {
+  background: var(--square-error);
+}
+
+.square-dark.is-error {
+  background: var(--square-error-dark);
+}
+
+.square.is-success {
+  background: var(--square-success);
+}
+
+.square-dark.is-success {
+  background: var(--square-success-dark);
+}
+
+.square.is-error::before,
+.square.is-success::before {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: clamp(0.6rem, 3vw, 1rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.square.is-error::before {
+  content: "✕";
+  background: #8f1d10;
+}
+
+.square.is-success::before {
+  content: "✓";
+  background: #145c2a;
+}
+
+.board-arrows {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.arrow {
+  stroke-width: 5;
+  stroke-linejoin: round;
+  opacity: 0.88;
+}
+
+.arrow-best {
+  fill: var(--arrow-best);
+  stroke: var(--arrow-best-edge);
+}
+
+.arrow-played {
+  fill: var(--arrow-played);
+  stroke: var(--arrow-played-edge);
+  stroke-dasharray: 14 8;
+}
+
+@keyframes board-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-7px);
+  }
+
+  40% {
+    transform: translateX(7px);
+  }
+
+  60% {
+    transform: translateX(-4px);
+  }
+
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* La secousse n'a lieu que si le joueur n'a pas demandé à limiter les animations : la case rouge suffit sinon. */
+@media (prefers-reduced-motion: no-preference) {
+  .board.is-shaking {
+    animation: board-shake 0.35s ease-in-out;
+  }
 }
 
 /* Coup possible : un point au centre, un anneau autour d'une pièce prenable. */
@@ -431,6 +543,67 @@ progress::-moz-progress-bar {
   gap: 6px;
   padding-top: 10px;
   border-top: 1px solid var(--line);
+}
+
+.sound-toggle {
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+
+.sound-toggle.is-muted {
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+.explore {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.explore h3 {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.explore-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.explore-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.explore-nav .btn {
+  padding-inline: 8px;
+}
+
+/* Barre d'évaluation : part du joueur en clair, celle de l'adversaire en sombre. */
+.eval-bar {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--muted);
+  border-radius: 5px;
+  background: #0b0f0d;
+}
+
+.eval-fill {
+  width: 50%;
+  height: 100%;
+  background: var(--ink);
+  transition: width 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eval-fill {
+    transition: none;
+  }
 }
 
 /* Bilan : une cadence à la fois. Les chiffres sont du texte, la couleur ne porte aucune information seule. */

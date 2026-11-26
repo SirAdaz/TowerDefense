@@ -35,6 +35,26 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - Écarté si : le coup joué figure parmi les acceptés, plus de 3 coups se valent (`MAX_SOLUTIONS`), ou le coup joué, recherché en profondeur, n'est plus une gaffe.
 - Le problème ne dit pas ce qu'il y a à trouver (gain, mat, défense) : comme en partie.
 
+## Retour sur le plateau
+
+- Mauvais coup : il reste 0,7 s sur le plateau, cases de départ et d'arrivée en rouge avec une croix, le plateau tremble (sauf `prefers-reduced-motion`), son d'erreur, puis la pièce revient. Le message est relu aux lecteurs d'écran même s'il se répète.
+- Bon coup : case d'arrivée en vert avec une coche, son du coup puis son de réussite. Si le moteur préférait un autre coup, il est dessiné en flèche.
+- Indice : la case de la pièce à jouer est entourée et le reste jusqu'à la fin du problème. Solution : le coup est joué et dessiné en flèche verte. Le texte à droite ne fait que compléter.
+- Flèches (`arrow.ts`) : forme pleine de 7 points, contour sombre ; verte pour le meilleur coup, rouge en pointillés pour le coup de la partie.
+
+## Sons (`sounds.ts`)
+
+- Un son par coup : échec (mat compris), sinon promotion, roque, prise (en passant comprise), déplacement. Plus l'erreur et la réussite d'un problème.
+- Fichiers mp3 de 3 à 5 Ko dans `public/sons/echecs/`, tirés des packs Kenney (CC0, voir `THIRD-PARTY-NOTICES.md`). Aucun son synthétisé.
+- Rien ne joue à l'ouverture de la page : seulement après un coup ou un bouton. Bouton « Couper le son », choix gardé dans `echecs.sound.v1`.
+
+## Explorer après un problème (`explore.ts`)
+
+- Une fois le problème réussi ou la solution montrée : « Continuer à jouer » (le moteur répond pour l'adversaire), « Voir la suite » (la meilleure suite gardée avec le problème), « Rejouer votre coup » (le coup de la partie puis la réfutation du moteur, 8 demi-coups au plus), « Revenir à la position du problème ».
+- Navigation coup par coup : boutons ou flèches gauche/droite (Début/Fin) hors du plateau. Jouer un coup au milieu d'une suite la coupe et explore une autre branche.
+- Moteur : un Web Worker Stockfish lancé au premier besoin et gardé, recherche courte (profondeur 14 ou 0,4 s, `EXPLORE_SEARCH`). Évaluation affichée du côté du joueur (« +1,3, avantage pour vous » ; égalité sous 0,3 pion), barre des chances de gain, flèche de son meilleur coup quand la suite est au bout.
+- Rien de ce qui est joué ici ne change la révision espacée : le résultat est gardé à la fin du problème.
+
 ## Révision espacée (`schedule.ts`)
 
 | Résultat | Effet |
