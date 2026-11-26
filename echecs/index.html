@@ -21,6 +21,7 @@
           <div class="panel-head">
             <h2 id="puzzles-title">Problèmes</h2>
             <p id="puzzle-counts" class="counts"></p>
+            <button id="sound-toggle" type="button" class="btn sound-toggle">Couper le son</button>
           </div>
 
           <p id="puzzle-empty" class="empty"></p>
@@ -48,6 +49,26 @@
                 <p id="puzzle-line"></p>
                 <p id="puzzle-schedule" class="hint"></p>
                 <p><a id="puzzle-link" href="https://www.chess.com/" target="_blank" rel="noopener noreferrer">Voir la partie sur chess.com</a></p>
+
+                <div class="explore" role="group" aria-labelledby="explore-title">
+                  <h3 id="explore-title">Comprendre la position</h3>
+                  <div class="actions">
+                    <button id="explore-continue" type="button" class="btn">Continuer à jouer</button>
+                    <button id="explore-line" type="button" class="btn">Voir la suite</button>
+                    <button id="explore-game" type="button" class="btn">Rejouer votre coup</button>
+                    <button id="explore-reset" type="button" class="btn">Revenir à la position du problème</button>
+                  </div>
+                  <div id="explore-panel" class="explore-panel" hidden>
+                    <p id="explore-mode" class="hint"></p>
+                    <div class="actions">
+                      <button id="explore-prev" type="button" class="btn">← Coup précédent</button>
+                      <button id="explore-next" type="button" class="btn">Coup suivant →</button>
+                    </div>
+                    <p id="explore-step" aria-live="polite"></p>
+                    <div class="eval-bar" aria-hidden="true"><div id="explore-eval-fill" class="eval-fill"></div></div>
+                    <p id="explore-eval" aria-live="polite"></p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -150,7 +171,7 @@
         <p>
           Analyse par <a href="https://github.com/nmrugg/stockfish.js" target="_blank" rel="noopener noreferrer">Stockfish.js 19</a>,
           logiciel libre sous licence GPL-3.0 (<a href="/licences/echecs.txt">mentions et code source</a>). Règles du jeu : chess.js
-          (BSD-2-Clause).
+          (BSD-2-Clause). Sons : Kenney (CC0).
         </p>
         <p>Page indépendante, sans lien avec Chess.com.</p>
       </footer>

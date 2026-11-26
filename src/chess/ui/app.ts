@@ -4,6 +4,7 @@ import { analyseGames } from "../data/analyser.ts";
 import type { AnalysisProgress } from "../data/analyser.ts";
 import { ChessComError, fetchGamesToAnalyse, isAbortError } from "../data/chesscomApi.ts";
 import { startEngine } from "../data/engine.ts";
+import { createExploreEngine } from "../data/exploreEngine.ts";
 import type { ChessStore } from "../data/store.ts";
 import { normalizeUsername } from "../game/chesscom.ts";
 import { countSolved, forgetUsername, loadUsername, saveSolvedCount, saveUsername } from "../game/summary.ts";
@@ -11,6 +12,7 @@ import { describeRemaining, pluralize } from "./format.ts";
 import { createPuzzleView } from "./puzzleView.ts";
 import type { PuzzleView } from "./puzzleView.ts";
 import { createReportView } from "./reportView.ts";
+import { createSoundPlayer } from "./sound.ts";
 import type { ReportView } from "./reportView.ts";
 import { FAILURE_MESSAGES, TEXTS } from "./texts.ts";
 
@@ -198,6 +200,8 @@ export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void 
     reportView: createReportView(),
     puzzleView: createPuzzleView({
       now: () => Date.now(),
+      sound: createSoundPlayer(keyValueStore, requireElement("sound-toggle", HTMLButtonElement)),
+      engine: createExploreEngine(startEngine),
       onReviewed: (puzzle) => {
         void store.savePuzzle(puzzle).then(() => refreshPuzzles(app));
       },

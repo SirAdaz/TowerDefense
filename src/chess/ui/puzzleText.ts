@@ -1,6 +1,8 @@
 import { Chess } from "chess.js";
 import { frenchSan } from "../game/notation.ts";
 import { nextDueAt } from "../game/schedule.ts";
+import { moveSoundOf } from "../game/sounds.ts";
+import type { MoveSound } from "../game/sounds.ts";
 import { countSolved } from "../game/summary.ts";
 import type { Puzzle } from "../game/types.ts";
 import { parseUciMove } from "../game/uci.ts";
@@ -21,16 +23,23 @@ export function askPromotion(dialog: HTMLDialogElement): Promise<string | null> 
   });
 }
 
-/** Position après un coup UCI et nom du coup en notation française ; `null` s'il est impossible. */
-export function playUci(fen: string, uci: string): { fen: string; san: string } | null {
+/** Un coup joué : la position d'arrivée, son nom en notation française et le son qui va avec. */
+export interface PlayedMove {
+  readonly fen: string;
+  readonly san: string;
+  readonly sound: MoveSound;
+}
+
+/** Position après un coup UCI, nom du coup et son ; `null` s'il est impossible. */
+export function playUci(fen: string, uci: string): PlayedMove | null {
   const move = parseUciMove(uci);
   if (move === null) {
     return null;
   }
   try {
     const chess = new Chess(fen);
-    const san = frenchSan(chess.move(move).san);
-    return { fen: chess.fen(), san };
+    const played = chess.move(move);
+    return { fen: chess.fen(), san: frenchSan(played.san), sound: moveSoundOf(played.san, played.flags) };
   } catch {
     return null;
   }
