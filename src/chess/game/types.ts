@@ -168,3 +168,32 @@ export interface ConversionDrill {
   readonly playedSan: string;
   readonly review: ReviewState;
 }
+
+/** Menace concrète laissée passer par une gaffe (voir `threats.ts`). */
+export interface DrillThreat {
+  readonly kind: "capture" | "mate";
+  readonly moveUci: string;
+  readonly from: string;
+  readonly to: string;
+  readonly san: string;
+}
+
+/** Position d'avant une gaffe qui a ignoré une menace : la voir, puis la parer. */
+export interface DefenseDrill {
+  readonly id: string;
+  readonly username: string;
+  readonly gameUrl: string;
+  readonly timeClass: TimeClass;
+  readonly gameEndTime: number;
+  readonly fen: string;
+  readonly playerColor: PlayerColor;
+  readonly previousMoveUci: string | null;
+  /** Évaluation avant la gaffe, vue du joueur : une parade doit la garder. */
+  readonly cpBefore: number;
+  readonly playedSan: string;
+  readonly playedUci: string;
+  /** Meilleur coup du moteur dans la position ("" s'il manque). */
+  readonly bestUci: string;
+  readonly threat: DrillThreat;
+  readonly review: ReviewState;
+}
