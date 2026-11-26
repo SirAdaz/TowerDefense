@@ -7,19 +7,18 @@ import { startEngine } from "../data/engine.ts";
 import { createExploreEngine } from "../data/exploreEngine.ts";
 import type { ChessStore } from "../data/store.ts";
 import { normalizeUsername } from "../game/chesscom.ts";
-import { selectConversionDrills } from "../game/conversion.ts";
-import { selectDefenseDrills } from "../game/defense.ts";
-import { createConvertView } from "./convertView.ts";
-import type { ConvertView } from "./convertView.ts";
-import { createDefendView } from "./defendView.ts";
-import type { DefendView } from "./defendView.ts";
-import { createPrepareControl } from "./prepareGames.ts";
-import type { PrepareControl } from "./prepareGames.ts";
+import { detectTheme } from "../game/themes.ts";
+import type { TacticTheme } from "../game/themes.ts";
+import type { Puzzle } from "../game/types.ts";
+import { createDrillViews } from "./drillViews.ts";
+import type { DrillViews } from "./drillViews.ts";
 import { countSolved, forgetUsername, loadUsername, saveSolvedCount, saveUsername } from "../game/summary.ts";
 import { describeRemaining, pluralize } from "./format.ts";
 import { createPuzzleView } from "./puzzleView.ts";
 import type { PuzzleView } from "./puzzleView.ts";
 import { createReportView } from "./reportView.ts";
+import { createThemeView } from "./themeView.ts";
+import type { ThemeView } from "./themeView.ts";
 import { createReviewView } from "./reviewView.ts";
 import type { ReviewView } from "./reviewView.ts";
 import { createSoundPlayer } from "./sound.ts";
@@ -47,11 +46,9 @@ interface App {
   readonly store: ChessStore;
   readonly puzzleView: PuzzleView;
   readonly reportView: ReportView;
+  readonly themeView: ThemeView;
   readonly reviewView: ReviewView;
-  readonly convertView: ConvertView;
-  readonly convertPrepare: PrepareControl;
-  readonly defendView: DefendView;
-  readonly defendPrepare: PrepareControl;
+  readonly drillViews: DrillViews;
   username: string | null;
   /** Présent pendant une analyse : sert à l'annuler, et à refuser d'en lancer deux. */
   abortController: AbortController | null;
@@ -85,16 +82,12 @@ function renderAccount(app: App): void {
 async function refreshPuzzles(app: App): Promise<void> {
   const puzzles = app.username === null ? [] : await app.store.listPuzzles(app.username);
   app.puzzleView.setPuzzles(puzzles);
+  app.themeView.setPuzzles(puzzles);
   const games = app.username === null ? [] : await app.store.listGames(app.username);
   const drillReviews = app.username === null ? [] : await app.store.listDrillReviews(app.username);
   app.reportView.setGames(games);
   app.reviewView.setGames(games);
-  const conversion = selectConversionDrills(games, puzzles, drillReviews);
-  app.convertView.setDrills(conversion.drills, games.length > 0);
-  app.convertPrepare.setGames(conversion.gamesToPrepare);
-  const defense = selectDefenseDrills(games, drillReviews);
-  app.defendView.setDrills(defense.drills, games.length > 0);
-  app.defendPrepare.setGames(defense.gamesToPrepare);
+  app.drillViews.setData(games, puzzles, drillReviews);
   if (app.username !== null) {
     saveSolvedCount(app.keyValueStore, countSolved(puzzles));
   }
@@ -213,10 +206,21 @@ async function forgetPlayer(app: App): Promise<void> {
   app.elements.input.focus();
 }
 
+/** Thème de chaque problème, lu une seule fois : la position et la suite d'un problème ne changent pas. */
+function memoizeTheme(): (puzzle: Puzzle) => TacticTheme {
+  const themes = new Map<string, TacticTheme>();
+  return (puzzle) => {
+    const known = themes.get(puzzle.id) ?? detectTheme(puzzle);
+    themes.set(puzzle.id, known);
+    return known;
+  };
+}
+
 /** Branche la page : pseudo gardé dans le navigateur, analyse à la demande, entraîneur de problèmes. */
 export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void {
   const sound = createSoundPlayer(keyValueStore, requireElement("sound-toggle", HTMLButtonElement));
   const exploreEngine = createExploreEngine(startEngine);
+  const themeOf = memoizeTheme();
   const app: App = {
     elements: collectElements(),
     keyValueStore,
@@ -228,8 +232,15 @@ export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void 
       now: () => Date.now(),
       sound,
       engine: exploreEngine,
+      themeOf,
       onReviewed: (puzzle) => {
         void store.savePuzzle(puzzle).then(() => refreshPuzzles(app));
+      },
+    }),
+    themeView: createThemeView({
+      themeOf,
+      onFilter: (theme) => {
+        app.puzzleView.setThemeFilter(theme);
       },
     }),
     reviewView: createReviewView({
@@ -241,37 +252,13 @@ export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void 
         void refreshPuzzles(app);
       },
     }),
-    convertView: createConvertView({
-      now: () => Date.now(),
-      random: () => Math.random(),
-      sound,
-      engine: exploreEngine,
+    drillViews: createDrillViews({
+      store,
       keyValueStore,
-      onReviewed: (drillReview) => {
-        void store.saveDrillReview(drillReview).then(() => refreshPuzzles(app));
-      },
-    }),
-    convertPrepare: createPrepareControl({
-      prefix: "convert-prepare",
-      store,
-      startEngine,
-      onGameReady: () => {
-        void refreshPuzzles(app);
-      },
-    }),
-    defendView: createDefendView({
-      now: () => Date.now(),
       sound,
       engine: exploreEngine,
-      onReviewed: (drillReview) => {
-        void store.saveDrillReview(drillReview).then(() => refreshPuzzles(app));
-      },
-    }),
-    defendPrepare: createPrepareControl({
-      prefix: "defend-prepare",
-      store,
       startEngine,
-      onGameReady: () => {
+      onChange: () => {
         void refreshPuzzles(app);
       },
     }),
