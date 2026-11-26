@@ -12,6 +12,8 @@ import { describeRemaining, pluralize } from "./format.ts";
 import { createPuzzleView } from "./puzzleView.ts";
 import type { PuzzleView } from "./puzzleView.ts";
 import { createReportView } from "./reportView.ts";
+import { createReviewView } from "./reviewView.ts";
+import type { ReviewView } from "./reviewView.ts";
 import { createSoundPlayer } from "./sound.ts";
 import type { ReportView } from "./reportView.ts";
 import { FAILURE_MESSAGES, TEXTS } from "./texts.ts";
@@ -37,6 +39,7 @@ interface App {
   readonly store: ChessStore;
   readonly puzzleView: PuzzleView;
   readonly reportView: ReportView;
+  readonly reviewView: ReviewView;
   username: string | null;
   /** Présent pendant une analyse : sert à l'annuler, et à refuser d'en lancer deux. */
   abortController: AbortController | null;
@@ -70,7 +73,9 @@ function renderAccount(app: App): void {
 async function refreshPuzzles(app: App): Promise<void> {
   const puzzles = app.username === null ? [] : await app.store.listPuzzles(app.username);
   app.puzzleView.setPuzzles(puzzles);
-  app.reportView.setGames(app.username === null ? [] : await app.store.listGames(app.username));
+  const games = app.username === null ? [] : await app.store.listGames(app.username);
+  app.reportView.setGames(games);
+  app.reviewView.setGames(games);
   if (app.username !== null) {
     saveSolvedCount(app.keyValueStore, countSolved(puzzles));
   }
@@ -191,6 +196,8 @@ async function forgetPlayer(app: App): Promise<void> {
 
 /** Branche la page : pseudo gardé dans le navigateur, analyse à la demande, entraîneur de problèmes. */
 export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void {
+  const sound = createSoundPlayer(keyValueStore, requireElement("sound-toggle", HTMLButtonElement));
+  const exploreEngine = createExploreEngine(startEngine);
   const app: App = {
     elements: collectElements(),
     keyValueStore,
@@ -200,10 +207,19 @@ export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void 
     reportView: createReportView(),
     puzzleView: createPuzzleView({
       now: () => Date.now(),
-      sound: createSoundPlayer(keyValueStore, requireElement("sound-toggle", HTMLButtonElement)),
-      engine: createExploreEngine(startEngine),
+      sound,
+      engine: exploreEngine,
       onReviewed: (puzzle) => {
         void store.savePuzzle(puzzle).then(() => refreshPuzzles(app));
+      },
+    }),
+    reviewView: createReviewView({
+      store,
+      startEngine,
+      sound,
+      engine: exploreEngine,
+      onGameUpdated: () => {
+        void refreshPuzzles(app);
       },
     }),
   };

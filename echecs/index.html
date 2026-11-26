@@ -120,6 +120,97 @@
           </div>
         </section>
 
+        <section id="games" class="panel" aria-labelledby="games-title" hidden>
+          <h2 id="games-title">Revue de vos parties</h2>
+
+          <div id="game-picker">
+            <p class="hint">Choisissez une partie : chaque coup des deux camps reçoit un avis, avec le coup proposé par le moteur et le temps passé.</p>
+            <ul id="game-list" class="game-list"></ul>
+          </div>
+
+          <div id="review" class="review" hidden>
+            <div class="review-head">
+              <button id="review-back" type="button" class="btn"><span aria-hidden="true">←</span> Toutes les parties</button>
+              <h3 id="review-title"></h3>
+            </div>
+
+            <div id="review-progress" class="progress" hidden>
+              <label for="review-progress-bar" id="review-progress-label">Analyse de la partie</label>
+              <progress id="review-progress-bar" max="1" value="0"></progress>
+              <button id="review-cancel" type="button" class="btn">Annuler</button>
+            </div>
+            <p id="review-status" class="status" role="status" aria-live="polite"></p>
+
+            <div id="review-body" class="review-body" hidden>
+              <table class="review-summary">
+                <caption class="sr-only">Résumé : précision et avis sur les coups de chaque joueur</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Avis</th>
+                    <th scope="col" id="review-white-name" class="number"></th>
+                    <th scope="col" id="review-black-name" class="number"></th>
+                  </tr>
+                </thead>
+                <tbody id="review-summary"></tbody>
+              </table>
+
+              <div class="review-main">
+                <div class="review-board-area">
+                  <div class="review-evalbar" aria-hidden="true"><div id="review-evalbar-fill" class="review-evalbar-fill"></div></div>
+                  <div class="board-wrap">
+                    <div id="review-board" class="board" role="group" aria-label="Échiquier de la revue" aria-describedby="review-board-help"></div>
+                    <div id="review-explore-panel" class="explore-panel" hidden>
+                      <p id="review-explore-mode" class="hint"></p>
+                      <div class="explore-nav">
+                        <button id="review-explore-prev" type="button" class="btn"><span aria-hidden="true">←</span> Coup précédent</button>
+                        <button id="review-explore-next" type="button" class="btn">Coup suivant <span aria-hidden="true">→</span></button>
+                      </div>
+                      <p id="review-explore-step" aria-live="polite"></p>
+                      <div class="eval-bar" aria-hidden="true"><div id="review-explore-eval-fill" class="eval-fill"></div></div>
+                      <p id="review-explore-eval" aria-live="polite"></p>
+                    </div>
+                    <p id="review-board-help" class="sr-only">
+                      Jouer une pièce sur ce plateau ouvre l'exploration depuis la position affichée. Au clavier : flèches pour changer de
+                      case, Entrée pour choisir.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="review-side">
+                  <p id="review-comment" class="feedback" aria-live="polite"></p>
+                  <div class="review-nav" role="group" aria-label="Se déplacer dans la partie">
+                    <button id="review-first" type="button" class="btn">Début</button>
+                    <button id="review-prev" type="button" class="btn"><span aria-hidden="true">←</span> Précédent</button>
+                    <button id="review-next" type="button" class="btn">Suivant <span aria-hidden="true">→</span></button>
+                    <button id="review-last" type="button" class="btn">Fin</button>
+                  </div>
+                  <div class="actions">
+                    <button id="review-explore" type="button" class="btn">Explorer depuis ce coup</button>
+                    <button id="review-explore-exit" type="button" class="btn" hidden>Revenir à la revue</button>
+                  </div>
+                  <ol id="review-moves" class="review-moves" aria-label="Coups de la partie"></ol>
+                </div>
+              </div>
+
+              <div class="report-block">
+                <h4>Évaluation au fil de la partie</h4>
+                <svg id="review-eval-chart" class="review-chart" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg>
+                <p class="hint">
+                  Zone claire : chances des blancs. Traits : gaffes, erreurs, occasions manquées et coups brillants. Cliquez pour aller
+                  au coup (la liste des coups fait de même au clavier).
+                </p>
+              </div>
+
+              <div class="report-block">
+                <h4>Temps par coup</h4>
+                <svg id="review-time-chart" class="review-chart time-chart" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg>
+                <p class="hint">Barres vers le haut : blancs ; vers le bas : noirs. Rouge : joué sous 10 s à la pendule. Ambre : coup long.</p>
+                <p id="review-time-text"></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="panel" aria-labelledby="account-title">
           <h2 id="account-title">Vos parties</h2>
 

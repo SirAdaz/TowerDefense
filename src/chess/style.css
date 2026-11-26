@@ -750,6 +750,411 @@ progress::-moz-progress-bar {
   font-size: 0.85rem;
 }
 
+/* Ouvertures du bilan : nom du site, coups en français, idée, position au clic. */
+.opening-cell {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  font-weight: 600;
+}
+
+.opening-moves {
+  color: var(--brass);
+  font-weight: 500;
+}
+
+.opening-idea {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.opening-toggle {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+.small-sample {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.mini-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  width: min(100%, 200px);
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+}
+
+.mini-square {
+  display: grid;
+  place-items: center;
+  background: var(--square-light);
+}
+
+.mini-square.mini-dark {
+  background: var(--square-dark);
+}
+
+/* Revue de partie. */
+.game-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-item {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--muted);
+  border-radius: 8px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.game-item:hover {
+  border-color: var(--muted);
+}
+
+.game-item.result-win {
+  border-left-color: var(--good);
+}
+
+.game-item.result-loss {
+  border-left-color: var(--bad);
+}
+
+.game-result {
+  font-weight: 700;
+}
+
+.game-details {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.review,
+.review-body {
+  display: grid;
+  gap: 14px;
+}
+
+.review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.review-head h3 {
+  font-size: 1.05rem;
+}
+
+.review-summary {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.review-summary th,
+.review-summary td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.review-summary thead th {
+  color: var(--muted);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.review-class {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.review-main {
+  display: grid;
+  gap: 14px;
+}
+
+.review-board-area {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.review-board-area .board-wrap {
+  flex: 1;
+  margin-inline: 0;
+}
+
+/* Barre d'évaluation verticale : la part du joueur part du bas, à sa couleur. */
+.review-evalbar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 14px;
+  aspect-ratio: 14 / 400;
+  min-height: 200px;
+  overflow: hidden;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  background: #0b0f0d;
+  align-self: stretch;
+}
+
+.review-evalbar-fill {
+  width: 100%;
+  background: var(--ink);
+  transition: height 0.3s ease;
+}
+
+.review-evalbar:has(.is-black) {
+  background: var(--ink);
+}
+
+.review-evalbar-fill.is-black {
+  background: #0b0f0d;
+}
+
+.review-side {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.review-nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.review-nav .btn {
+  padding-inline: 4px;
+  font-size: 0.9rem;
+}
+
+.review-moves {
+  display: grid;
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.review-row {
+  display: grid;
+  grid-template-columns: 2.6em 1fr 1fr;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+}
+
+.review-number {
+  align-self: center;
+  padding-left: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.review-move-empty {
+  align-self: center;
+  color: var(--muted);
+}
+
+.review-move {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 4px 6px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.review-move:hover {
+  background: var(--panel-raised);
+}
+
+.review-move.is-current {
+  background: var(--panel-raised);
+  box-shadow: inset 3px 0 0 var(--brass);
+  font-weight: 700;
+}
+
+.review-time {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.review-time.is-long {
+  color: #f2c46d;
+}
+
+.review-time.is-zeitnot {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.move-icon-svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.move-icon-shape {
+  stroke: #0b0f0d;
+  stroke-width: 1;
+}
+
+.move-icon-text {
+  fill: #ffffff;
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.move-icon-stroke {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.move-brilliant .move-icon-shape {
+  fill: #1593a0;
+}
+
+.move-best .move-icon-shape {
+  fill: #2f8f45;
+}
+
+.move-excellent .move-icon-shape {
+  fill: #4f8a2f;
+}
+
+.move-good .move-icon-shape {
+  fill: #5f7a68;
+}
+
+.move-inaccuracy .move-icon-shape {
+  fill: #f0c05a;
+}
+
+.move-inaccuracy .move-icon-text {
+  fill: #1d1503;
+}
+
+.move-mistake .move-icon-shape {
+  fill: #c8641a;
+}
+
+.move-miss .move-icon-shape {
+  fill: #a8324a;
+}
+
+.move-blunder .move-icon-shape {
+  fill: #c0281c;
+}
+
+.review-chart {
+  display: block;
+  width: 100%;
+  height: 110px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0b0f0d;
+  cursor: pointer;
+}
+
+.time-chart {
+  height: 80px;
+}
+
+.chart-white {
+  fill: var(--ink);
+}
+
+.chart-mid {
+  stroke: var(--muted);
+  stroke-dasharray: 6 6;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-cursor {
+  stroke: var(--brass);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-mark {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.mark-blunder {
+  stroke: #e5483a;
+}
+
+.mark-mistake {
+  stroke: #e98a3b;
+}
+
+.mark-miss {
+  stroke: #d9668a;
+}
+
+.mark-brilliant {
+  stroke: #33c3cf;
+}
+
+.time-white {
+  fill: var(--ink);
+}
+
+.time-black {
+  fill: #6e7f77;
+}
+
+.time-long {
+  fill: #f2c46d;
+}
+
+.time-zeitnot {
+  fill: #ff6b57;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-evalbar-fill {
+    transition: none;
+  }
+}
+
 @media (min-width: 760px) {
   .trainer {
     grid-template-columns: minmax(0, 560px) minmax(220px, 1fr);
@@ -758,5 +1163,10 @@ progress::-moz-progress-bar {
 
   .board-wrap {
     margin-inline: 0;
+  }
+
+  .review-main {
+    grid-template-columns: minmax(0, 560px) minmax(240px, 1fr);
+    align-items: start;
   }
 }

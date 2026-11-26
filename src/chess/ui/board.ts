@@ -4,7 +4,7 @@ import { FILES, squareAt, squareLabel } from "../game/notation.ts";
 import type { PlayerColor } from "../game/types.ts";
 import { attachBoardInput } from "./boardInput.ts";
 import { createArrowLayer, drawArrows } from "./boardOverlay.ts";
-import type { BoardArrow } from "./boardOverlay.ts";
+import type { BoardArrow, BoardBadge } from "./boardOverlay.ts";
 import { createPiece } from "./pieces.ts";
 
 /** Ce que le plateau montre : une position, vue d'un camp, avec ses repères. */
@@ -21,6 +21,8 @@ export interface BoardPosition {
   readonly arrows?: readonly BoardArrow[];
   /** Cases colorées un instant : coup refusé (`error`) ou trouvé (`success`). */
   readonly marks?: readonly SquareMark[];
+  /** Avis sur le dernier coup (revue de partie). */
+  readonly badge?: BoardBadge;
 }
 
 export interface SquareMark {
@@ -198,14 +200,14 @@ export function createBoard(options: BoardOptions): BoardView {
     show: (position) => {
       state.position = position;
       state.chess = new Chess(position.fen);
-      drawArrows(arrowLayer, position.arrows ?? [], position.orientation);
+      drawArrows(arrowLayer, position.arrows ?? [], position.orientation, position.badge ?? null);
       select(null);
     },
     shake: () => {
       shakeBoard(options.root);
     },
     setArrows: (arrows) => {
-      drawArrows(arrowLayer, arrows, state.position.orientation);
+      drawArrows(arrowLayer, arrows, state.position.orientation, state.position.badge ?? null);
     },
   };
 }
