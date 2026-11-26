@@ -7,6 +7,11 @@ import { startEngine } from "../data/engine.ts";
 import { createExploreEngine } from "../data/exploreEngine.ts";
 import type { ChessStore } from "../data/store.ts";
 import { normalizeUsername } from "../game/chesscom.ts";
+import { selectConversionDrills } from "../game/conversion.ts";
+import { createConvertView } from "./convertView.ts";
+import type { ConvertView } from "./convertView.ts";
+import { createPrepareControl } from "./prepareGames.ts";
+import type { PrepareControl } from "./prepareGames.ts";
 import { countSolved, forgetUsername, loadUsername, saveSolvedCount, saveUsername } from "../game/summary.ts";
 import { describeRemaining, pluralize } from "./format.ts";
 import { createPuzzleView } from "./puzzleView.ts";
@@ -40,6 +45,8 @@ interface App {
   readonly puzzleView: PuzzleView;
   readonly reportView: ReportView;
   readonly reviewView: ReviewView;
+  readonly convertView: ConvertView;
+  readonly convertPrepare: PrepareControl;
   username: string | null;
   /** Présent pendant une analyse : sert à l'annuler, et à refuser d'en lancer deux. */
   abortController: AbortController | null;
@@ -74,8 +81,12 @@ async function refreshPuzzles(app: App): Promise<void> {
   const puzzles = app.username === null ? [] : await app.store.listPuzzles(app.username);
   app.puzzleView.setPuzzles(puzzles);
   const games = app.username === null ? [] : await app.store.listGames(app.username);
+  const drillReviews = app.username === null ? [] : await app.store.listDrillReviews(app.username);
   app.reportView.setGames(games);
   app.reviewView.setGames(games);
+  const conversion = selectConversionDrills(games, puzzles, drillReviews);
+  app.convertView.setDrills(conversion.drills, games.length > 0);
+  app.convertPrepare.setGames(conversion.gamesToPrepare);
   if (app.username !== null) {
     saveSolvedCount(app.keyValueStore, countSolved(puzzles));
   }
@@ -219,6 +230,24 @@ export function startApp(keyValueStore: KeyValueStore, store: ChessStore): void 
       sound,
       engine: exploreEngine,
       onGameUpdated: () => {
+        void refreshPuzzles(app);
+      },
+    }),
+    convertView: createConvertView({
+      now: () => Date.now(),
+      random: () => Math.random(),
+      sound,
+      engine: exploreEngine,
+      keyValueStore,
+      onReviewed: (drillReview) => {
+        void store.saveDrillReview(drillReview).then(() => refreshPuzzles(app));
+      },
+    }),
+    convertPrepare: createPrepareControl({
+      prefix: "convert-prepare",
+      store,
+      startEngine,
+      onGameReady: () => {
         void refreshPuzzles(app);
       },
     }),

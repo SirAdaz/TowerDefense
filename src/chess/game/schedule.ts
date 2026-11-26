@@ -1,4 +1,11 @@
-import type { Puzzle, ReviewState } from "./types.ts";
+import type { ReviewState } from "./types.ts";
+
+/** Ce que la révision espacée lit d'un exercice (problème, avantage à convertir, menace à voir). */
+export interface Schedulable {
+  readonly review: ReviewState;
+  /** Fin de la partie d'origine, en secondes Unix : les nouveaux exercices vont des plus récents aux plus anciens. */
+  readonly gameEndTime: number;
+}
 
 export const DAY_MS = 86_400_000;
 
@@ -43,23 +50,23 @@ export function isDue(state: ReviewState, now: number): boolean {
   return state.dueAt <= now;
 }
 
-function isNew(puzzle: Puzzle): boolean {
-  return puzzle.review.step < 0;
+function isNew(item: Schedulable): boolean {
+  return item.review.step < 0;
 }
 
 /**
- * Problèmes à faire maintenant : d'abord les révisions échues (la plus en retard en premier),
+ * Exercices à faire maintenant : d'abord les révisions échues (la plus en retard en premier),
  * puis les nouveaux, des parties les plus récentes aux plus anciennes.
  */
-export function selectSession(puzzles: readonly Puzzle[], now: number): Puzzle[] {
-  const duePuzzles = puzzles.filter((puzzle) => isDue(puzzle.review, now));
-  const reviews = duePuzzles.filter((puzzle) => !isNew(puzzle)).sort((a, b) => a.review.dueAt - b.review.dueAt);
-  const newPuzzles = duePuzzles.filter(isNew).sort((a, b) => b.gameEndTime - a.gameEndTime);
-  return [...reviews, ...newPuzzles];
+export function selectSession<Item extends Schedulable>(items: readonly Item[], now: number): Item[] {
+  const dueItems = items.filter((item) => isDue(item.review, now));
+  const reviews = dueItems.filter((item) => !isNew(item)).sort((a, b) => a.review.dueAt - b.review.dueAt);
+  const newItems = dueItems.filter(isNew).sort((a, b) => b.gameEndTime - a.gameEndTime);
+  return [...reviews, ...newItems];
 }
 
 /** Date de la prochaine révision à venir, ou `null` s'il n'y en a aucune de programmée. */
-export function nextDueAt(puzzles: readonly Puzzle[], now: number): number | null {
-  const upcoming = puzzles.map((puzzle) => puzzle.review.dueAt).filter((dueAt) => dueAt > now);
+export function nextDueAt(items: readonly Schedulable[], now: number): number | null {
+  const upcoming = items.map((item) => item.review.dueAt).filter((dueAt) => dueAt > now);
   return upcoming.length === 0 ? null : Math.min(...upcoming);
 }

@@ -74,6 +74,83 @@
           </div>
         </section>
 
+        <section id="convert" class="panel" aria-labelledby="convert-title" hidden>
+          <div class="panel-head">
+            <h2 id="convert-title">Convertir un avantage</h2>
+            <p id="convert-counts" class="counts"></p>
+            <div class="level-field">
+              <label for="convert-level">Adversaire</label>
+              <select id="convert-level"></select>
+            </div>
+          </div>
+          <p class="hint">
+            Vous gagniez, puis une gaffe a tout gâché. Rejouez la position jusqu'au bout contre le moteur : mat, abandon du
+            moteur (+10), ou encore au moins +1,5 après 10 coups. Sous +1, c'est raté.
+          </p>
+
+          <div id="convert-prepare" class="prepare" hidden>
+            <p id="convert-prepare-text"></p>
+            <div class="actions">
+              <button id="convert-prepare-start" type="button" class="btn">Relire ces parties</button>
+            </div>
+            <div id="convert-prepare-progress" class="progress" hidden>
+              <label for="convert-prepare-bar" id="convert-prepare-label">Relecture des parties</label>
+              <progress id="convert-prepare-bar" max="1" value="0"></progress>
+              <button id="convert-prepare-cancel" type="button" class="btn">Annuler</button>
+            </div>
+            <p id="convert-prepare-status" class="status" role="status" aria-live="polite"></p>
+          </div>
+
+          <p id="convert-empty" class="empty"></p>
+
+          <div id="convert-trainer" class="trainer" hidden>
+            <div class="board-wrap">
+              <div id="convert-board" class="board" role="group" aria-label="Échiquier de la position à convertir" aria-describedby="convert-board-help"></div>
+              <div id="convert-explore-panel" class="explore-panel" hidden>
+                <p id="convert-explore-mode" class="hint"></p>
+                <div class="explore-nav">
+                  <button id="convert-explore-prev" type="button" class="btn"><span aria-hidden="true">←</span> Coup précédent</button>
+                  <button id="convert-explore-next" type="button" class="btn">Coup suivant <span aria-hidden="true">→</span></button>
+                </div>
+                <p id="convert-explore-step" aria-live="polite"></p>
+                <div class="eval-bar" aria-hidden="true"><div id="convert-explore-eval-fill" class="eval-fill"></div></div>
+                <p id="convert-explore-eval" aria-live="polite"></p>
+              </div>
+              <p id="convert-board-help" class="sr-only">
+                Glissez une pièce, ou choisissez-la puis sa case d'arrivée. Au clavier : flèches pour changer de case, Entrée pour
+                choisir. Le moteur répond pour l'adversaire.
+              </p>
+            </div>
+
+            <div class="trainer-side">
+              <p id="convert-prompt" class="prompt"></p>
+              <p id="convert-origin" class="hint"></p>
+              <p id="convert-step" class="hint"></p>
+              <div class="eval-bar" aria-hidden="true"><div id="convert-eval-fill" class="eval-fill"></div></div>
+              <p id="convert-eval" aria-live="polite"></p>
+              <p id="convert-feedback" class="feedback" role="status" aria-live="polite"></p>
+              <div class="actions">
+                <button id="convert-hint" type="button" class="btn">Indice</button>
+                <button id="convert-resign" type="button" class="btn">Abandonner</button>
+                <button id="convert-next" type="button" class="btn btn-primary" hidden>Exercice suivant</button>
+              </div>
+              <div id="convert-debrief" class="debrief" hidden>
+                <p id="convert-played"></p>
+                <p id="convert-schedule" class="hint"></p>
+                <p><a id="convert-link" href="https://www.chess.com/" target="_blank" rel="noopener noreferrer">Voir la partie sur chess.com</a></p>
+
+                <div class="explore" role="group" aria-labelledby="convert-explore-title">
+                  <h3 id="convert-explore-title">Comprendre la position</h3>
+                  <div class="actions">
+                    <button id="convert-explore-game" type="button" class="btn">Rejouer votre coup de la partie</button>
+                    <button id="convert-explore-reset" type="button" class="btn">Rejouer depuis le départ</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="report" class="panel" aria-labelledby="report-title" hidden>
           <div class="panel-head">
             <h2 id="report-title">Bilan</h2>

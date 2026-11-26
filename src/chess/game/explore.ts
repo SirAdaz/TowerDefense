@@ -99,6 +99,11 @@ function formatPawns(cp: number): string {
   return pawns.toFixed(1).replace(".", ",");
 }
 
+/** « +3,0 », « −1,2 » : une évaluation en pions, avec son signe. */
+export function formatPawnsSigned(cp: number): string {
+  return `${cp >= 0 ? "+" : "−"}${formatPawns(cp)}`;
+}
+
 /**
  * Évaluation du moteur dite du côté du joueur, quel que soit le camp au trait : « +1,3, avantage pour
  * vous », « mat en 2 pour l'adversaire ». À moins de 0,3 pion, la position est dite égale.

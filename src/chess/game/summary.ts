@@ -1,6 +1,6 @@
 import type { KeyValueStore } from "../../shared/storage.ts";
 import { normalizeUsername } from "./chesscom.ts";
-import type { Puzzle } from "./types.ts";
+import type { ReviewState } from "./types.ts";
 
 /** Le pseudo ne quitte jamais ce navigateur : il n'est écrit que dans son stockage local. */
 export const USERNAME_KEY = "echecs.username.v1";
@@ -42,8 +42,8 @@ export function forgetUsername(store: KeyValueStore): void {
 }
 
 /** Un problème compte comme réussi dès qu'il a été trouvé une fois sans indice. */
-export function countSolved(puzzles: readonly Puzzle[]): number {
-  return puzzles.filter((puzzle) => puzzle.review.successes > 0).length;
+export function countSolved(items: readonly { readonly review: ReviewState }[]): number {
+  return items.filter((item) => item.review.successes > 0).length;
 }
 
 export function saveSolvedCount(store: KeyValueStore, solvedCount: number): void {

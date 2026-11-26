@@ -7,6 +7,8 @@ export const EXPLORE_SEARCH: SearchLimits = { depth: 14, moveTimeMs: 400, multiP
 export interface ExploreEngine {
   /** Meilleure variante de la position, ou `null` s'il n'y en a pas (mat, pat). Rejette si le moteur ne démarre pas. */
   bestLine(fen: string): Promise<EngineLine | null>;
+  /** Variantes de la position avec d'autres limites (adversaire affaibli), la meilleure en premier. */
+  search(fen: string, limits: SearchLimits): Promise<EngineLine[]>;
 }
 
 /**
@@ -24,14 +26,13 @@ export function createExploreEngine(startEngine: () => Promise<Engine>): Explore
     });
     return engine;
   };
+  const search = (fen: string, limits: SearchLimits) => {
+    const pending = queue.then(async () => (await getEngine()).analyse(fen, limits));
+    queue = pending.catch(() => null);
+    return pending;
+  };
   return {
-    bestLine: (fen) => {
-      const search = queue.then(async () => {
-        const lines = await (await getEngine()).analyse(fen, EXPLORE_SEARCH);
-        return lines[0] ?? null;
-      });
-      queue = search.catch(() => null);
-      return search;
-    },
+    bestLine: async (fen) => (await search(fen, EXPLORE_SEARCH))[0] ?? null,
+    search,
   };
 }

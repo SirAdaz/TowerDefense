@@ -55,7 +55,7 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - Moteur : un Web Worker Stockfish lancé au premier besoin et gardé, recherche courte (profondeur 14 ou 0,4 s, `EXPLORE_SEARCH`). Évaluation affichée du côté du joueur (« +1,3, avantage pour vous » ; égalité sous 0,3 pion), barre des chances de gain, flèche de son meilleur coup quand la suite est au bout.
 - Rien de ce qui est joué ici ne change la révision espacée : le résultat est gardé à la fin du problème.
 
-## Révision espacée (`schedule.ts`)
+## Révision espacée (`schedule.ts`, commune à tous les exercices)
 
 | Résultat | Effet |
 | -------- | ----- |
@@ -66,6 +66,38 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - Un problème réussi à la première vue revient dans 3 jours.
 - L'échéance est avancée de 8 heures (`DUE_SLACK_MS`) : « demain » marche dès le matin.
 - Ordre d'une séance : révisions échues (la plus en retard d'abord), puis nouveaux problèmes, des parties les plus récentes aux plus anciennes.
+
+## Convertir un avantage (`conversion.ts`, `opponent.ts`)
+
+- Positions : chaque gaffe du joueur (voir Analyse) faite alors qu'il valait au moins +1,5 pion (`WINNING_CP`), position d'avant la gaffe. Elle vient du PGN gardé pour la revue, sinon du problème de la même gaffe ; à défaut, la partie est signalée « à relire » (bouton : relecture dans l'archive chess.com puis réévaluation, comme pour la revue).
+- Le joueur joue la position contre le moteur. Après chaque coup du joueur, le moteur juge la position à pleine force (recherche de l'exploration), puis l'adversaire répond à son niveau.
+
+| Fin | Règle | Résultat |
+| --- | ----- | -------- |
+| Mat donné | | réussi |
+| Abandon du moteur | +10 pions ou plus sans mat annoncé (`RESIGN_CP`) | réussi |
+| Avantage tenu | après 10 coups du joueur (`CONVERSION_MOVES`), encore +1,5 ou mieux | réussi |
+| Avantage perdu | sous +1 pion après un coup du joueur (`LOST_ADVANTAGE_CP`) | raté (coup fautif en flèche rouge, meilleur coup en vert) |
+| Pas assez | après 10 coups, entre +1 et +1,5 | raté |
+| Nulle, maté, abandon du joueur | | raté |
+
+- Un mat annoncé ne fait pas abandonner le moteur : le joueur va au bout. Nulle par répétition comptée (coups rejoués depuis le départ).
+- Indice : le meilleur coup en flèche ; une réussite avec l'indice compte comme « réussi avec l'indice » (révision espacée ci-dessous).
+- Niveaux de l'adversaire (`OPPONENT_LEVELS`, choix gardé dans `echecs.opponentLevel.v1`) : le moteur cherche peu profond, regarde plusieurs coups et n'en joue pas toujours le meilleur (tiré au hasard parmi ceux qui ne perdent pas plus d'un seuil). Réflexion 0,4 s.
+
+| Niveau | Profondeur | Variantes | Meilleur coup joué | Perte tolérée sinon |
+| ------ | ---------- | --------- | ------------------ | ------------------- |
+| Débutant | 4 | 5 | 30 % | 4 pions |
+| Facile (défaut, pour un joueur 600-800) | 6 | 4 | 50 % | 2 pions |
+| Moyen | 8 | 3 | 70 % | 0,8 pion |
+| Fort | 14 | 1 | toujours | — |
+
+- Ces forces ne sont pas étalonnées en Elo : « Facile » est un choix de départ, à ajuster selon le ressenti.
+- Explorer après l'exercice : « Rejouer votre coup de la partie » (gaffe et réfutation) et « Rejouer depuis le départ ».
+
+## Stockage
+
+- IndexedDB `echecs`, version 2 : parties, problèmes, et états de révision des exercices (`drills`, un état par exercice ; l'exercice lui-même se reconstruit à partir des parties). La montée depuis la version 1 ne fait qu'ajouter la table : parties et problèmes restent.
 
 ## Bilan par cadence (`report.ts`)
 

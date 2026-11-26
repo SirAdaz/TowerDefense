@@ -1,4 +1,4 @@
-import type { AnalysedGame, Puzzle } from "../game/types.ts";
+import type { AnalysedGame, DrillReview, Puzzle } from "../game/types.ts";
 
 /** Ce que la page garde d'une visite à l'autre : parties analysées et problèmes, par pseudo. */
 export interface ChessStore {
@@ -8,15 +8,25 @@ export interface ChessStore {
   saveGame(game: AnalysedGame): Promise<void>;
   listPuzzles(username: string): Promise<Puzzle[]>;
   savePuzzle(puzzle: Puzzle): Promise<void>;
+  /** États de révision des exercices qui ne sont pas des problèmes (avantage à convertir, menace à voir). */
+  listDrillReviews(username: string): Promise<DrillReview[]>;
+  saveDrillReview(drillReview: DrillReview): Promise<void>;
   clearUser(username: string): Promise<void>;
 }
 
 const DATABASE_NAME = "echecs";
-const DATABASE_VERSION = 1;
+/**
+ * Version 2 : ajoute la table des révisions d'exercices. La montée de version ne crée que les tables
+ * absentes : parties et problèmes de la version 1 restent tels quels.
+ */
+const DATABASE_VERSION = 2;
 const GAMES = "games";
 const PUZZLES = "puzzles";
+const DRILLS = "drills";
 
-type StoreName = typeof GAMES | typeof PUZZLES;
+type StoreName = typeof GAMES | typeof PUZZLES | typeof DRILLS;
+
+const STORE_NAMES: readonly StoreName[] = [GAMES, PUZZLES, DRILLS];
 
 /** Clé d'un enregistrement : le pseudo d'abord, pour lister ou effacer tout un joueur d'un coup. */
 function recordKey(username: string, id: string): string {
@@ -41,7 +51,7 @@ function settle<Result>(request: IDBRequest<Result>): Promise<Result> {
 function openDatabase(): Promise<IDBDatabase> {
   const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
   request.onupgradeneeded = () => {
-    for (const storeName of [GAMES, PUZZLES]) {
+    for (const storeName of STORE_NAMES) {
       if (!request.result.objectStoreNames.contains(storeName)) {
         request.result.createObjectStore(storeName);
       }
@@ -62,7 +72,7 @@ function indexedDbStore(database: IDBDatabase): ChessStore {
       return [];
     }
   };
-  const put = async (storeName: StoreName, key: string, stored: AnalysedGame | Puzzle) => {
+  const put = async (storeName: StoreName, key: string, stored: AnalysedGame | Puzzle | DrillReview) => {
     try {
       await settle(objectStore(storeName, "readwrite").put(stored, key));
     } catch (error) {
@@ -75,10 +85,13 @@ function indexedDbStore(database: IDBDatabase): ChessStore {
     saveGame: (game) => put(GAMES, recordKey(game.username, game.id), game),
     listPuzzles: (username) => listAll<Puzzle>(PUZZLES, username),
     savePuzzle: (puzzle) => put(PUZZLES, recordKey(puzzle.username, puzzle.id), puzzle),
+    listDrillReviews: (username) => listAll<DrillReview>(DRILLS, username),
+    saveDrillReview: (drillReview) => put(DRILLS, recordKey(drillReview.username, drillReview.id), drillReview),
     clearUser: async (username) => {
       try {
-        await settle(objectStore(GAMES, "readwrite").delete(userRange(username)));
-        await settle(objectStore(PUZZLES, "readwrite").delete(userRange(username)));
+        for (const storeName of STORE_NAMES) {
+          await settle(objectStore(storeName, "readwrite").delete(userRange(username)));
+        }
       } catch (error) {
         console.warn("Effacement de la base impossible", error);
       }
@@ -90,6 +103,7 @@ function indexedDbStore(database: IDBDatabase): ChessStore {
 export function memoryChessStore(): ChessStore {
   const games = new Map<string, AnalysedGame>();
   const puzzles = new Map<string, Puzzle>();
+  const drills = new Map<string, DrillReview>();
   const ofUser = <RecordType extends { username: string }>(records: Map<string, RecordType>, username: string) =>
     [...records.values()].filter((stored) => stored.username === username);
   const removeUser = (records: Map<string, { username: string }>, username: string) => {
@@ -109,9 +123,14 @@ export function memoryChessStore(): ChessStore {
     savePuzzle: async (puzzle) => {
       puzzles.set(recordKey(puzzle.username, puzzle.id), puzzle);
     },
+    listDrillReviews: async (username) => ofUser(drills, username),
+    saveDrillReview: async (drillReview) => {
+      drills.set(recordKey(drillReview.username, drillReview.id), drillReview);
+    },
     clearUser: async (username) => {
       removeUser(games, username);
       removeUser(puzzles, username);
+      removeUser(drills, username);
     },
   };
 }
