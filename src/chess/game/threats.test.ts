@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { IGNORED_MATE_PGN, IGNORED_PIECE_PGN, QUEEN_DROP_PGN } from "../../../tests/chessFixtures.ts";
 import { parseGame } from "./pgn.ts";
-import { detectThreat, isGoodParry, isThreatSquare, passTurn } from "./threats.ts";
+import { describeThreat, detectThreat, isGoodParry, isThreatSquare, passTurn } from "./threats.ts";
 
 function fenBefore(pgn: string, ply: number): string {
   return parseGame(pgn)?.moves[ply]?.fenBefore ?? "";
@@ -71,5 +71,22 @@ describe("réponses du joueur", () => {
     expect(isGoodParry(100, 30)).toBe(true);
     expect(isGoodParry(100, -20)).toBe(false);
     expect(isGoodParry(-30, -350)).toBe(false);
+  });
+});
+
+describe("describeThreat", () => {
+  it("dit la prise menacée et le mat menacé en clair", () => {
+    const pieceFen = fenBefore(IGNORED_PIECE_PGN, 3);
+    const capture = detectThreat(pieceFen, "e5f6");
+    expect(capture === null ? "" : describeThreat(pieceFen, capture)).toBe("Le pion en e5 peut prendre votre cavalier en f6 (exf6).");
+    const mateFen = fenBefore(IGNORED_MATE_PGN, 9);
+    const mate = detectThreat(mateFen, "h5f7");
+    expect(mate === null ? "" : describeThreat(mateFen, mate)).toBe("La dame en h5 menace de mater en f7 (Dxf7#).");
+  });
+
+  it("reste lisible si la case est vide", () => {
+    expect(describeThreat("4k3/8/8/8/8/8/8/4K3 w - - 0 1", { kind: "capture", moveUci: "a1a2", from: "a1", to: "a2", san: "Ra2" })).toBe(
+      "La pièce en a1 peut prendre votre pièce en a2 (Ta2).",
+    );
   });
 });

@@ -1,6 +1,7 @@
 import { Chess } from "chess.js";
 import type { Move, Square } from "chess.js";
 import { classifyMove } from "./evaluation.ts";
+import { frenchSan } from "./notation.ts";
 import type { DrillThreat } from "./types.ts";
 import { parseUciMove } from "./uci.ts";
 
@@ -92,4 +93,33 @@ export function isThreatSquare(threat: Threat, square: string): boolean {
 export function isGoodParry(cpBefore: number, cpAfter: number): boolean {
   const quality = classifyMove(cpBefore, cpAfter);
   return quality === "good" || quality === "inaccuracy";
+}
+
+/** Nom d'une pièce avec son article, pour les phrases d'explication. */
+const PIECE_PHRASES: Readonly<Record<string, string>> = {
+  p: "le pion",
+  n: "le cavalier",
+  b: "le fou",
+  r: "la tour",
+  q: "la dame",
+  k: "le roi",
+};
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/**
+ * La menace dite en clair : « Le pion en e5 peut prendre votre cavalier en f6 (exf6). », « La dame
+ * en h5 menace de mater en f7 (Dxf7#). ». `fen` : la position où le joueur a le trait.
+ */
+export function describeThreat(fen: string, threat: Threat): string {
+  const board = new Chess(fen);
+  const attacker = PIECE_PHRASES[board.get(threat.from as Square)?.type ?? ""] ?? "la pièce";
+  const san = frenchSan(threat.san);
+  if (threat.kind === "mate") {
+    return `${capitalize(attacker)} en ${threat.from} menace de mater en ${threat.to} (${san}).`;
+  }
+  const target = (PIECE_PHRASES[board.get(threat.to as Square)?.type ?? ""] ?? "la pièce").replace(/^(le|la) /, "votre ");
+  return `${capitalize(attacker)} en ${threat.from} peut prendre ${target} en ${threat.to} (${san}).`;
 }
