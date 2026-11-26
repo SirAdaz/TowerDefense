@@ -892,15 +892,18 @@ progress::-moz-progress-bar {
   gap: 14px;
 }
 
-.review-board-area {
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
+.review-board-area .board-wrap {
+  margin-inline: 0;
 }
 
-.review-board-area .board-wrap {
+.review-board-row {
+  display: flex;
+  gap: 6px;
+}
+
+.review-board-row .board {
   flex: 1;
-  margin-inline: 0;
+  min-width: 0;
 }
 
 /* Barre d'évaluation verticale : la part du joueur part du bas, à sa couleur. */
@@ -908,14 +911,12 @@ progress::-moz-progress-bar {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  flex: none;
   width: 14px;
-  aspect-ratio: 14 / 400;
-  min-height: 200px;
   overflow: hidden;
   border: 1px solid var(--muted);
   border-radius: 4px;
   background: #0b0f0d;
-  align-self: stretch;
 }
 
 .review-evalbar-fill {
@@ -946,7 +947,7 @@ progress::-moz-progress-bar {
 
 .review-nav .btn {
   padding-inline: 4px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .review-moves {
