@@ -1,7 +1,9 @@
 import { requireElement, setText } from "../../shared/dom.ts";
 import type { ExploreEngine } from "../data/exploreEngine.ts";
 import { formatLine, frenchSan } from "../game/notation.ts";
-import { applyReview, selectSession } from "../game/schedule.ts";
+import { applyReview } from "../game/schedule.ts";
+import { THEME_NAMES, selectThemeSession } from "../game/themes.ts";
+import type { TacticTheme } from "../game/themes.ts";
 import type { ReviewOutcome } from "../game/schedule.ts";
 import type { Puzzle } from "../game/types.ts";
 import { createBoard } from "./board.ts";
@@ -22,11 +24,15 @@ export interface PuzzleViewOptions {
   readonly sound: SoundPlayer;
   /** Moteur de l'exploration d'après problème, lancé au premier besoin. */
   readonly engine: ExploreEngine;
+  /** Thème tactique d'un problème (calculé une fois par problème). */
+  readonly themeOf: (puzzle: Puzzle) => TacticTheme;
 }
 
 export interface PuzzleView {
   /** Donne la liste à jour des problèmes du joueur ; celui en cours n'est pas interrompu. */
   setPuzzles(puzzles: readonly Puzzle[]): void;
+  /** Restreint la séance à un thème (`null` : tous les problèmes) et passe au premier problème de la nouvelle file. */
+  setThemeFilter(theme: TacticTheme | null): void;
 }
 
 interface Attempt {
@@ -50,6 +56,7 @@ interface Session {
   timers: number[];
   /** Coup qui a clos le problème (trouvé ou solution) : « Continuer à jouer » repart de là. */
   solvedUci: string;
+  themeFilter: TacticTheme | null;
 }
 
 /** Un coup refusé reste ce temps sur le plateau, en rouge, avant que la pièce revienne à sa place. */
@@ -151,7 +158,8 @@ function finish(session: Session, puzzle: Puzzle, playedUci: string, isFound: bo
     arrows: bestMoveArrows(puzzle, playedUci, isFound),
     marks: isFound ? [{ square: playedUci.slice(2, 4), tone: "success" }] : [],
   });
-  setText(elements.played, `Dans la partie, vous aviez joué ${frenchSan(puzzle.playedSan)}.`);
+  const themeName = THEME_NAMES[options.themeOf(puzzle)].toLowerCase();
+  setText(elements.played, `Dans la partie, vous aviez joué ${frenchSan(puzzle.playedSan)}. Thème : ${themeName}.`);
   setText(elements.line, `Meilleure suite : ${formatLine(puzzle.fen, puzzle.solutionLine)}`);
   setText(elements.schedule, `Ce problème reviendra ${describeDelay(review.dueAt, options.now())}.`);
   elements.link.href = puzzle.gameUrl;
@@ -297,7 +305,10 @@ export function createPuzzleView(options: PuzzleViewOptions): PuzzleView {
     attempt: newAttempt(),
     timers: [],
     solvedUci: "",
+    themeFilter: null,
   };
+  const buildQueue = (excludedId: string | undefined) =>
+    selectThemeSession(session.puzzles, options.now(), session.themeFilter, options.themeOf).filter((puzzle) => puzzle.id !== excludedId);
   attachExploreButtons(session);
 
   elements.hint.addEventListener("click", () => {
@@ -314,13 +325,18 @@ export function createPuzzleView(options: PuzzleViewOptions): PuzzleView {
     setPuzzles: (puzzles) => {
       const shownId = session.current?.id;
       session.puzzles = puzzles;
-      session.queue = selectSession(puzzles, options.now()).filter((puzzle) => puzzle.id !== shownId);
+      session.queue = buildQueue(shownId);
       // Rien d'affiché, ou un problème qui n'existe plus (pseudo oublié) : on passe au suivant.
       if (!puzzles.some((puzzle) => puzzle.id === shownId)) {
         showNext(session);
       } else {
         renderCounts(session);
       }
+    },
+    setThemeFilter: (theme) => {
+      session.themeFilter = theme;
+      session.queue = buildQueue(undefined);
+      showNext(session);
     },
   };
 }

@@ -1206,3 +1206,46 @@ progress::-moz-progress-bar {
 .board.is-picking .square {
   cursor: crosshair;
 }
+
+/* Thèmes ratés : une ligne par thème, le bouton passe dessous sur téléphone. */
+.theme-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theme-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-raised);
+}
+
+.theme-item div {
+  display: grid;
+  min-width: 0;
+}
+
+.theme-details {
+  color: var(--muted);
+}
+
+.filter-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  border-left: 4px solid var(--brass);
+  border-radius: 4px;
+  background: var(--panel-raised);
+  font-weight: 600;
+}

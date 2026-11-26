@@ -103,6 +103,26 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - Étape 2, la parade : le coup de la partie est refusé, le meilleur coup du moteur accepté ; tout autre coup est évalué par le moteur (recherche de l'exploration) et accepté s'il n'est ni une erreur ni une gaffe par rapport à l'évaluation d'avant la gaffe (barème de l'Analyse). Un mat donné est accepté. Refusé : il reste 0,7 s en rouge puis la pièce revient. « Voir une parade » joue le coup du moteur (raté).
 - Réussi sans faute ni aide : délai suivant de la révision espacée ; sinon, raté.
 
+## Thèmes tactiques (`themes.ts`, `tactics.ts`)
+
+- Chaque problème reçoit un thème, lu sur sa suite gardée (meilleur coup puis réponses, 6 demi-coups au plus), dans cet ordre ; le premier qui colle gagne :
+
+| Thème | Détection |
+| ----- | --------- |
+| Mat en 1 | le meilleur coup mate |
+| Mat en 2 | le deuxième coup du joueur mate |
+| Pièce en prise | le premier coup prend une pièce (cavalier ou plus) non défendue, ou qui vaut plus que celle qui prend |
+| Fourchette | la pièce jouée attaque au moins deux pièces de valeur (roi, pièce qui vaut plus qu'elle, ou pièce non défendue d'au moins un cavalier), et le joueur en prend une ensuite |
+| Attaque à la découverte | le premier coup démasque une pièce à longue portée sur le roi, ou sur une pièce d'au moins un cavalier prise ensuite |
+| Clouage | après le premier coup, une pièce adverse est clouée (devant le roi ou une pièce qui vaut plus), clouage créé par ce coup ou pièce clouée attaquée par lui, et le joueur la prend ensuite |
+| Enfilade | la pièce jouée attaque, sur une ligne, le roi ou une pièce plus précieuse que celle de derrière, et le joueur prend celle de derrière ensuite |
+| Autre | tout le reste |
+
+- Sauf les mats, un thème n'est donné que si la suite gagne au moins 2 pions de matériel (`MIN_THEME_GAIN`, valeurs 1/3/3/5/9). Une défense, un coup calme, une promotion ou un motif non reconnu restent « Autre » : mieux vaut « Autre » qu'un thème faux.
+- Surcharge (pièce qui défend deux choses) : non détectée, trop d'erreurs possibles avec une suite de 6 demi-coups.
+- Bilan sous l'entraîneur : les thèmes du plus raté (nombre de problèmes, donc d'occasions ratées en partie) au moins raté, à égalité le moins réussi d'abord, « Autre » à la fin ; réussite à l'entraînement = réussites sur tentatives.
+- « S'entraîner » sur un thème : la séance ne garde que ses problèmes, ceux dus d'abord puis les autres, du plus proche de son échéance au plus lointain (on peut s'entraîner à tout moment ; les résultats comptent pour la révision). Le thème est dit dans la correction, jamais avant.
+
 ## Stockage
 
 - IndexedDB `echecs`, version 2 : parties, problèmes, et états de révision des exercices (`drills`, un état par exercice ; l'exercice lui-même se reconstruit à partir des parties). La montée depuis la version 1 ne fait qu'ajouter la table : parties et problèmes restent.
