@@ -47,9 +47,9 @@ const OPENINGS: Readonly<Record<string, OpeningEntry>> = {
   "scandinavian defense": { moves: ["e4", "d5"], idea: "Les noirs attaquent e4 tout de suite ; la dame reprend souvent en d5." },
   "pirc defense": { moves: ["e4", "d6", "d4", "Nf6"], idea: "Les noirs laissent le centre aux blancs pour l'attaquer ensuite, fou en g7." },
   "modern defense": { moves: ["e4", "g6"], idea: "Fou en g7 d'abord, le centre est contesté plus tard." },
-  "alekhine defense": { moves: ["e4", "Nf6"], idea: "Le cavalier attaque e4 pour pousser les pions blancs en avant et en faire des cibles." },
+  "alekhines defense": { moves: ["e4", "Nf6"], idea: "Le cavalier attaque e4 pour pousser les pions blancs en avant et en faire des cibles." },
   "nimzowitsch defense": { moves: ["e4", "Nc6"], idea: "Le cavalier sort avant les pions : une défense rare qui sort des sentiers battus." },
-  "owen defense": { moves: ["e4", "b6"], idea: "Le fou va en b7 pour viser e4 de loin." },
+  "owens defense": { moves: ["e4", "b6"], idea: "Le fou va en b7 pour viser e4 de loin." },
   "queens gambit": { moves: ["d4", "d5", "c4"], idea: "Les blancs offrent le pion c pour détourner le pion d5 et gagner le centre." },
   "slav defense": { moves: ["d4", "d5", "c4", "c6"], idea: "Les noirs tiennent d5 avec c6 et gardent leur fou c8 libre." },
   "london system": { moves: ["d4", "d5", "Bf4"], idea: "Un plan fixe : d4, Ff4, e3, Cf3, c3. Simple à jouer contre presque tout." },
@@ -109,10 +109,21 @@ function gameOpeningMoves(pgn: string, entry: OpeningEntry | undefined): string[
   return gameMoves.slice(0, plies);
 }
 
+/**
+ * Les coups de la partie illustrent l'ouverture s'ils commencent par ses coups de base : une partie
+ * arrivée par transposition (1. e4 Ca6 classée Caro-Kann) montrerait sinon d'autres coups que l'idée.
+ */
+function isFaithful(gameMoves: readonly string[], entry: OpeningEntry | undefined): boolean {
+  if (entry === undefined) {
+    return gameMoves.length > 0;
+  }
+  return gameMoves.length >= entry.moves.length && entry.moves.every((san, index) => gameMoves[index] === san);
+}
+
 export function openingLine(name: string, pgn: string | null): OpeningLine | null {
   const entry = OPENINGS[familyKey(name)];
   const fromGame = pgn === null ? [] : gameOpeningMoves(pgn, entry);
-  const sanMoves = fromGame.length > 0 ? fromGame : (entry?.moves ?? []);
+  const sanMoves = isFaithful(fromGame, entry) ? fromGame : (entry?.moves ?? []);
   if (sanMoves.length === 0) {
     return null;
   }

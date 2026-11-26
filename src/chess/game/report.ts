@@ -1,3 +1,4 @@
+import { UNKNOWN_OPENING } from "./pgn.ts";
 import type { AnalysedGame, LostPhase, MoveReview, TimeClass } from "./types.ts";
 
 /** « Sous 10 secondes » : la pendule du joueur après son coup, telle que le PGN la note. */
@@ -69,14 +70,16 @@ function toPressure(moves: readonly MoveReview[]): ClockPressure {
 export function openingStats(games: readonly AnalysedGame[]): OpeningStat[] {
   const byName = new Map<string, { gameCount: number; winCount: number; pgn: string | null; pgnEndTime: number }>();
   for (const game of games) {
-    const tally = byName.get(game.openingName) ?? { gameCount: 0, winCount: 0, pgn: null, pgnEndTime: -1 };
+    // Parties gardées avant que « Undefined » (page du site) ne soit lu comme une ouverture inconnue.
+    const name = game.openingName === "Undefined" ? UNKNOWN_OPENING : game.openingName;
+    const tally = byName.get(name) ?? { gameCount: 0, winCount: 0, pgn: null, pgnEndTime: -1 };
     tally.gameCount += 1;
     tally.winCount += game.result === "win" ? 1 : 0;
     if (game.timeline !== undefined && game.endTime > tally.pgnEndTime) {
       tally.pgn = game.timeline.pgn;
       tally.pgnEndTime = game.endTime;
     }
-    byName.set(game.openingName, tally);
+    byName.set(name, tally);
   }
   return [...byName.entries()]
     .map(([name, tally]) => ({

@@ -59,6 +59,10 @@ export function openingFamily(ecoUrl: string | undefined): string {
     return UNKNOWN_OPENING;
   }
   const words = slug.replace(/-\d.*$/, "").split("-").join(" ");
+  // Le site range certaines parties sous « Undefined » : ce n'est pas un nom d'ouverture.
+  if (words === "Undefined") {
+    return UNKNOWN_OPENING;
+  }
   const family = OPENING_FAMILY_END.exec(words);
   if (family?.[1] !== undefined) {
     return family[1];

@@ -28,6 +28,12 @@ describe("openingLine", () => {
     expect(openingLine("Caro-Kann Defense", null)?.idea).toContain("c6");
   });
 
+  it("garde les coups de base quand la partie y est arrivée par transposition", () => {
+    const transposed = MATED_PGN.replace("1. e4 {[%clk 0:03:00]} 1... e5", "1. e4 {[%clk 0:03:00]} 1... Nc6");
+    expect(openingLine("Caro Kann Defense", transposed)?.sanMoves).toEqual(["e4", "c6"]);
+    expect(openingLine("Alekhines Defense", null)?.idea).toContain("e4");
+  });
+
   it("montre les coups seuls pour une ouverture inconnue", () => {
     const line = openingLine("Ouverture inconnue", BARE_PGN);
     expect(line?.idea).toBeNull();

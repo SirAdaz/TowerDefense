@@ -76,6 +76,12 @@ describe("parsing a game", () => {
   });
 });
 
+describe("undefined opening", () => {
+  it("treats the site's Undefined page as an unknown opening", () => {
+    expect(openingFamily("https://www.chess.com/openings/Undefined")).toBe(UNKNOWN_OPENING);
+  });
+});
+
 describe("time control and headers", () => {
   it("lit la cadence et l'incrément", () => {
     expect(parseTimeControl('[TimeControl "180+2"]')).toEqual({ baseSeconds: 180, incrementSeconds: 2 });

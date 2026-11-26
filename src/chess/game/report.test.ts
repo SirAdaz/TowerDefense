@@ -90,6 +90,12 @@ describe("openings", () => {
     expect(stats[0]?.pgn).toBe("recent");
   });
 
+  it("merges the site's Undefined page with unknown openings", () => {
+    const stats = openingStats([analysedGame({ openingName: "Undefined" }), analysedGame({ openingName: "Ouverture inconnue" })]);
+    expect(stats).toHaveLength(1);
+    expect(stats[0]?.name).toBe("Ouverture inconnue");
+  });
+
   it("keeps only the most played openings", () => {
     const many = Array.from({ length: MAX_OPENINGS + 3 }, (_, index) => analysedGame({ openingName: `Opening ${index}` }));
     expect(openingStats(many)).toHaveLength(MAX_OPENINGS);
