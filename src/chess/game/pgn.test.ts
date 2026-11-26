@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BARE_PGN, MATED_PGN } from "../../../tests/chessFixtures.ts";
-import { UNKNOWN_OPENING, openingFamily, parseClocks, parseGame, phaseOf } from "./pgn.ts";
+import { UNKNOWN_OPENING, openingFamily, parseClocks, parseGame, parseTimeControl, pgnHeader, phaseOf } from "./pgn.ts";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -73,5 +73,19 @@ describe("parsing a game", () => {
   it("rejects a game that does not start from the initial position", () => {
     const fromPosition = '[SetUp "1"]\n[FEN "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1"]\n\n1. e4 *\n';
     expect(parseGame(fromPosition)).toBeNull();
+  });
+});
+
+describe("time control and headers", () => {
+  it("lit la cadence et l'incrément", () => {
+    expect(parseTimeControl('[TimeControl "180+2"]')).toEqual({ baseSeconds: 180, incrementSeconds: 2 });
+    expect(parseTimeControl('[TimeControl "60"]')).toEqual({ baseSeconds: 60, incrementSeconds: 0 });
+    expect(parseTimeControl('[TimeControl "1/259200"]')).toBeNull();
+    expect(parseTimeControl("")).toBeNull();
+  });
+
+  it("lit un en-tête, ou rien", () => {
+    expect(pgnHeader(MATED_PGN, "White")).toBe("adversaire-test");
+    expect(pgnHeader(MATED_PGN, "Termination")).toBeNull();
   });
 });
