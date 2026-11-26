@@ -571,6 +571,17 @@ progress::-moz-progress-bar {
 .explore-panel {
   display: grid;
   gap: 8px;
+  margin-top: 12px;
+}
+
+.explore-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.explore-nav .btn {
+  padding-inline: 8px;
 }
 
 /* Barre d'évaluation : part du joueur en clair, celle de l'adversaire en sombre. */

@@ -179,9 +179,14 @@ function playReply(explorer: Explorer, uci: string): void {
 }
 
 function start(explorer: Explorer, mode: ExploreMode, line: ExploreLine, shouldReply: boolean): void {
+  const isFirstView = explorer.line === null;
   explorer.mode = mode;
   explorer.line = line;
   render(explorer, shouldReply);
+  // Sur téléphone, les boutons sont sous le texte : on remonte au plateau, où tout se passe désormais.
+  if (isFirstView) {
+    explorer.elements.panel.parentElement?.scrollIntoView({ block: "start" });
+  }
 }
 
 /** Coup de la partie puis la réfutation du moteur, cherchée dans la position d'après. */
