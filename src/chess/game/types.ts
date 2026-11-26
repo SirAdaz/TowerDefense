@@ -141,3 +141,30 @@ export interface Puzzle {
   readonly solutionLine: readonly string[];
   readonly review: ReviewState;
 }
+
+/**
+ * Révision d'un exercice qui n'est pas un problème (avantage à convertir, menace à voir). L'exercice
+ * lui-même se reconstruit à partir des parties : seul son état de révision est gardé.
+ */
+export interface DrillReview {
+  readonly id: string;
+  readonly username: string;
+  readonly review: ReviewState;
+}
+
+/** Position d'avant une gaffe faite en position gagnante : il faut la jouer jusqu'au gain contre le moteur. */
+export interface ConversionDrill {
+  readonly id: string;
+  readonly username: string;
+  readonly gameUrl: string;
+  readonly timeClass: TimeClass;
+  readonly gameEndTime: number;
+  readonly fen: string;
+  readonly playerColor: PlayerColor;
+  readonly previousMoveUci: string | null;
+  /** Évaluation avant la gaffe, vue du joueur, en centipions bornés. */
+  readonly startCp: number;
+  /** La gaffe de la partie (notation anglaise). */
+  readonly playedSan: string;
+  readonly review: ReviewState;
+}

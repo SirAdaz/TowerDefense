@@ -3,6 +3,7 @@ import {
   createLine,
   describeEvaluation,
   fenAt,
+  formatPawnsSigned,
   goTo,
   lastMoveOf,
   playMove,
@@ -89,5 +90,13 @@ describe("describeEvaluation", () => {
     expect(describeEvaluation({ kind: "mate", value: 3 }, false).text).toBe("Évaluation : mat en 3 pour l'adversaire.");
     expect(describeEvaluation({ kind: "mate", value: 0 }, false).text).toBe("Échec et mat.");
     expect(describeEvaluation({ kind: "mate", value: 1 }, true).winPercent).toBeGreaterThan(95);
+  });
+});
+
+describe("formatPawnsSigned", () => {
+  it("écrit les pions à la française, avec le signe", () => {
+    expect(formatPawnsSigned(300)).toBe("+3,0");
+    expect(formatPawnsSigned(-120)).toBe("−1,2");
+    expect(formatPawnsSigned(0)).toBe("+0,0");
   });
 });

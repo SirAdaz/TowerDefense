@@ -1175,3 +1175,29 @@ progress::-moz-progress-bar {
     align-items: start;
   }
 }
+
+/* Convertir un avantage : choix de l’adversaire dans l’en-tête, relecture des anciennes parties à part. */
+.level-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.level-field select {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  background: var(--felt);
+  color: var(--ink);
+  font: inherit;
+}
+
+.prepare {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
