@@ -24,6 +24,11 @@
             <button id="sound-toggle" type="button" class="btn sound-toggle">Couper le son</button>
           </div>
 
+          <div id="themes-filter" class="filter-note" hidden>
+            <p id="themes-filter-text"></p>
+            <button id="themes-clear" type="button" class="btn">Revenir à tous les problèmes</button>
+          </div>
+
           <p id="puzzle-empty" class="empty"></p>
 
           <div id="trainer" class="trainer" hidden>
@@ -71,6 +76,15 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <div id="themes" class="report-block" hidden>
+            <h3 id="themes-title">Thèmes ratés en partie</h3>
+            <ul id="themes-list" class="theme-list" aria-labelledby="themes-title"></ul>
+            <p class="hint">
+              Chaque problème est une occasion ratée en partie. Le thème est lu automatiquement sur la suite du moteur ; quand rien
+              n'est sûr, le problème est rangé dans « Autre ».
+            </p>
           </div>
         </section>
 
