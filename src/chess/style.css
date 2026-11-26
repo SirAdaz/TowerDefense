@@ -1249,3 +1249,13 @@ progress::-moz-progress-bar {
   background: var(--panel-raised);
   font-weight: 600;
 }
+
+.route-item div {
+  gap: 2px;
+  flex: 1 1 260px;
+}
+
+.route-exits {
+  margin: 6px 0 0;
+  padding-left: 1.2em;
+}

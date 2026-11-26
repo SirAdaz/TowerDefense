@@ -197,3 +197,33 @@ export interface DefenseDrill {
   readonly threat: DrillThreat;
   readonly review: ReviewState;
 }
+
+/**
+ * Position d'ouverture où le joueur quitte le bon chemin (premier coup imprécis avant le 13e coup),
+ * regroupée sur toutes ses parties qui y passent (voir `repertoire.ts`).
+ */
+export interface OpeningDrill {
+  readonly id: string;
+  readonly username: string;
+  /** Famille d'ouverture de la première partie qui y passe, comme dans le bilan (nom anglais du site). */
+  readonly openingName: string;
+  readonly playerColor: PlayerColor;
+  readonly fen: string;
+  readonly previousMoveUci: string | null;
+  /** Numéro du coup dans la partie (1 pour le premier coup de chaque camp). */
+  readonly moveNumber: number;
+  /** Coup du moteur (UCI), la réponse attendue. */
+  readonly bestUci: string;
+  /** Évaluation avant le coup, vue du joueur : un coup équivalent doit la garder. */
+  readonly cpBefore: number;
+  /** Coups joués à cet endroit dans les parties (notation anglaise), sans doublon. */
+  readonly playedSans: readonly string[];
+  readonly playedUcis: readonly string[];
+  /** Nombre de parties sorties de la route à cet endroit. */
+  readonly occurrences: number;
+  /** Partie la plus récente passée par là. */
+  readonly gameUrl: string;
+  readonly timeClass: TimeClass;
+  readonly gameEndTime: number;
+  readonly review: ReviewState;
+}

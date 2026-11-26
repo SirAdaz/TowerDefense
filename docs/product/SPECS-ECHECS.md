@@ -103,6 +103,16 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - Étape 2, la parade : le coup de la partie est refusé, le meilleur coup du moteur accepté ; tout autre coup est évalué par le moteur (recherche de l'exploration) et accepté s'il n'est ni une erreur ni une gaffe par rapport à l'évaluation d'avant la gaffe (barème de l'Analyse). Un mat donné est accepté. Refusé : il reste 0,7 s en rouge puis la pièce revient. « Voir une parade » joue le coup du moteur (raté).
 - Réussi sans faute ni aide : délai suivant de la révision espacée ; sinon, raté.
 
+## Votre répertoire (`repertoire.ts`)
+
+- Ouvertures retenues, par couleur : celles jouées au moins 2 fois avec cette couleur (`MIN_ROUTE_GAMES`), les 6 plus jouées (`MAX_OPENINGS`, comme le bilan) ; famille d'ouverture du bilan, ouverture inconnue écartée.
+- Sortie de route d'une partie : le premier coup du joueur avant le 13e coup (`REPERTOIRE_MAX_PLIES` = 24 demi-coups) jugé au moins « imprécision » (barème de l'Analyse), si le moteur préférait un autre coup. Une partie au plus une sortie.
+- Les parties qui passent par la même position (pièces, trait, roques, prise en passant) donnent un seul exercice : position d'avant le coup, coups joués là et nombre de parties ; la partie la plus récente sert de lien.
+- Réponse : le coup du moteur (passe rapide, gardé pour la revue) accepté d'office ; un coup joué là dans les parties refusé d'office ; tout autre coup évalué par le moteur (recherche de l'exploration) et accepté s'il reste « bon » par rapport à l'évaluation d'avant (perte < 0,5 pion ou < 2,5 points de chances). « Voir le bon coup » joue le coup du moteur (raté).
+- Révision espacée commune ; état gardé dans `drills` (identifiant : la position + `:opening`), donc sans changer la base.
+- Bilan « Là où vous sortez de la route » : chaque ouverture retenue, sa couleur, son nombre de parties, son idée (`openingGuide.ts`) et ses sorties (« Coup 4 : vous avez joué Cg5 (2 parties) », sans dire le bon coup) ; « S'entraîner » garde seulement ses positions, dues d'abord puis les autres.
+- Il faut le PGN et les meilleurs coups gardés pour la revue : une partie analysée avant et sortie de la route est signalée « à relire ».
+
 ## Thèmes tactiques (`themes.ts`, `tactics.ts`, `exchange.ts`, `blunderThemes.ts`)
 
 - Chaque problème reçoit un thème, lu sans moteur sur sa suite gardée (meilleur coup puis réponses, 6 demi-coups au plus) et sur le coup joué dans la partie, dans cet ordre ; le premier qui colle gagne.
