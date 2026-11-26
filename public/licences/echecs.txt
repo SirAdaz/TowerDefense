@@ -53,6 +53,14 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
+Sons
+----
+Sons des coups, de l'erreur et de la réussite : packs « Impact Sounds » et
+« Interface Sounds » de Kenney (www.kenney.nl), sous licence Creative Commons
+Zero (CC0 1.0, domaine public) :
+  https://creativecommons.org/publicdomain/zero/1.0/
+Fichiers raccourcis et convertis en mp3. Aucun son de Chess.com n'est utilisé.
+
 Données
 -------
 Les parties sont lues sur l'API publique de Chess.com (api.chess.com), depuis
