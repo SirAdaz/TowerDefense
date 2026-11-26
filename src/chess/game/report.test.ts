@@ -74,10 +74,20 @@ describe("openings", () => {
       analysedGame({ openingName: "Caro Kann Defense", result: "win" }),
     ]);
     expect(stats).toEqual([
-      { name: "Italian Game", gameCount: 2, winCount: 1, winRate: 50 },
-      { name: "Caro Kann Defense", gameCount: 1, winCount: 1, winRate: 100 },
-      { name: "Sicilian Defense", gameCount: 1, winCount: 0, winRate: 0 },
+      { name: "Italian Game", gameCount: 2, winCount: 1, winRate: 50, pgn: null },
+      { name: "Caro Kann Defense", gameCount: 1, winCount: 1, winRate: 100, pgn: null },
+      { name: "Sicilian Defense", gameCount: 1, winCount: 0, winRate: 0, pgn: null },
     ]);
+  });
+
+  it("keeps the PGN of the latest game that has one, to show the opening moves", () => {
+    const timeline = (pgn: string) => ({ pgn, scores: [], bestMoves: [] });
+    const stats = openingStats([
+      analysedGame({ endTime: 10, timeline: timeline("old") }),
+      analysedGame({ endTime: 30 }),
+      analysedGame({ endTime: 20, timeline: timeline("recent") }),
+    ]);
+    expect(stats[0]?.pgn).toBe("recent");
   });
 
   it("keeps only the most played openings", () => {
