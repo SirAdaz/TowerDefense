@@ -327,6 +327,34 @@
             <dl id="report-stats" class="stats"></dl>
 
             <div class="report-block">
+              <h3 id="report-progress-title">Progression semaine par semaine</h3>
+              <p id="report-progress-note" class="hint"></p>
+              <div id="report-progress-charts" class="progress-charts" hidden>
+                <figure class="progress-chart">
+                  <figcaption>Précision moyenne</figcaption>
+                  <svg id="report-progress-accuracy" class="week-chart" aria-hidden="true" focusable="false"></svg>
+                </figure>
+                <figure class="progress-chart">
+                  <figcaption>Gaffes par partie</figcaption>
+                  <svg id="report-progress-blunders" class="week-chart" aria-hidden="true" focusable="false"></svg>
+                </figure>
+              </div>
+              <div id="report-progress-table" class="table-scroll" hidden>
+                <table class="openings progress-table" aria-labelledby="report-progress-title">
+                  <thead>
+                    <tr>
+                      <th scope="col">Semaine du</th>
+                      <th scope="col" class="number">Parties</th>
+                      <th scope="col" class="number">Précision</th>
+                      <th scope="col" class="number">Gaffes par partie</th>
+                    </tr>
+                  </thead>
+                  <tbody id="report-progress-rows"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="report-block">
               <h3>Ouvertures les plus jouées</h3>
               <table class="openings">
                 <thead>

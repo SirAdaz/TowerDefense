@@ -31,7 +31,8 @@ export interface ReviewElements {
   readonly timeText: HTMLElement;
 }
 
-function requireSvg(id: string): SVGSVGElement {
+/** Comme `requireElement`, pour un graphique SVG de la page. */
+export function requireSvg(id: string): SVGSVGElement {
   const found = document.getElementById(id);
   if (!(found instanceof SVGSVGElement)) {
     throw new Error(`Missing element #${id}`);

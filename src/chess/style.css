@@ -1259,3 +1259,59 @@ progress::-moz-progress-bar {
   margin: 6px 0 0;
   padding-left: 1.2em;
 }
+
+/* Progression : deux graphiques d'une seule mesure chacun, puis le tableau des mêmes chiffres. */
+.progress-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px 20px;
+  margin: 8px 0 12px;
+}
+
+.progress-chart {
+  margin: 0;
+  min-width: 0;
+}
+
+.progress-chart figcaption {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.week-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.chart-text {
+  fill: var(--muted);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-line {
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.week-dot {
+  fill: var(--brass);
+  stroke: var(--panel);
+  stroke-width: 2;
+}
+
+.week-bar {
+  fill: var(--brass);
+}
+
+.progress-table thead th.number {
+  white-space: normal;
+}

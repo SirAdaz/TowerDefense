@@ -151,6 +151,8 @@ Source de vérité des chiffres : les constantes de `src/chess/game/` et de `src
 - Ouvertures : nom de famille tiré de l'adresse `ECOUrl` du PGN (« Sicilian Defense », gardé en anglais), les 6 plus jouées (`MAX_OPENINGS`) avec leur part de victoires, « peu de parties » sous 5 parties (`SMALL_SAMPLE_GAMES`).
 - Pour chaque ouverture (`openingGuide.ts`) : les premiers coups en notation française, pris dans la partie la plus récente qui a gardé son PGN et coupés au dernier coup de la variante lu dans l'adresse ECO (16 demi-coups au plus) ; sinon les coups de base de la table. Une phrase d'explication pour une quarantaine de familles fréquentes ; inconnue : les coups seuls. Bouton « Voir la position » : mini-échiquier de la position d'arrivée.
 - Défaites par phase où la partie a basculé (voir Analyse).
+- Progression semaine par semaine (`progress.ts`), dans la cadence choisie : précision moyenne et gaffes par partie de chaque semaine (lundi à dimanche, heure du joueur), semaines sans partie absentes. Deux graphiques d'une seule mesure chacun (courbe pour la précision, barres pour les gaffes, valeur au survol) puis un tableau des mêmes chiffres, lu par les lecteurs d'écran à la place des graphiques. Moins de 2 semaines (`MIN_PROGRESS_WEEKS`) : pas de graphique, une phrase le dit, le tableau reste.
+- Comme l'historique d'avant la première visite n'est pas analysé, la courbe se remplit au fil des semaines.
 - Fin de pendule : gaffes et erreurs pour 100 coups joués avec moins de 10 secondes (`LOW_CLOCK_SECONDS`, pendule notée après le coup), comparées au reste des coups.
 - Les parties sans coup évalué (illisibles, trop courtes) ne comptent pas.
 
