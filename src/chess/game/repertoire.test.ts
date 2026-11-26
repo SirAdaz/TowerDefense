@@ -75,12 +75,13 @@ describe("selectRepertoire", () => {
   });
 
   it("sépare les couleurs, et liste aussi les ouvertures sans sortie de route", () => {
-    const black = italianGame(
-      { id: "c", pgn: QUEENS_PAWN_PGN, deviationPly: 1, san: "f6", bestUci: "d7d5", quality: "mistake" },
-      { playerColor: "black", openingName: "Queens Pawn Opening" },
-    );
-    const clean = italianGame({ id: "d", deviationPly: 6, san: "d3", quality: "good" });
-    const selection = selectRepertoire([black, clean], []);
+    const black = (id: string) =>
+      italianGame(
+        { id, pgn: QUEENS_PAWN_PGN, deviationPly: 1, san: "f6", bestUci: "d7d5", quality: "mistake" },
+        { playerColor: "black", openingName: "Queens Pawn Opening" },
+      );
+    const clean = (id: string) => italianGame({ id, deviationPly: 6, san: "d3", quality: "good" });
+    const selection = selectRepertoire([black("c1"), black("c2"), clean("d1"), clean("d2")], []);
     expect(selection.routes.map((route) => [route.openingName, route.playerColor, route.drills.length])).toEqual([
       ["Italian Game", "white", 0],
       ["Queens Pawn Opening", "black", 1],
@@ -89,11 +90,15 @@ describe("selectRepertoire", () => {
   });
 
   it("met de côté les parties sans PGN gardé, et ignore l'écart déjà joué par le moteur", () => {
-    const withoutTimeline = { ...italianGame({ id: "e", deviationPly: 6, san: "Ng5" }), timeline: undefined };
+    const withoutTimeline = analysedGame({ id: "e", moves: italianGame({ id: "e", deviationPly: 6, san: "Ng5" }).moves });
     const sameAsEngine = italianGame({ id: "f", deviationPly: 6, san: "Ng5", bestUci: "f3g5" });
     const selection = selectRepertoire([withoutTimeline, sameAsEngine], []);
     expect(selection.gamesToPrepare.map((game) => game.id)).toEqual(["e"]);
     expect(selection.drills).toEqual([]);
+  });
+
+  it("écarte une ouverture jouée une seule fois avec cette couleur", () => {
+    expect(selectRepertoire([italianGame({ id: "a", deviationPly: 6, san: "Ng5" })], []).routes).toEqual([]);
   });
 
   it("écarte les ouvertures inconnues et les parties sans coup évalué", () => {
@@ -105,7 +110,8 @@ describe("selectRepertoire", () => {
   it("reprend l'état de révision gardé", () => {
     const review = { step: 2, dueAt: 5, attempts: 3, successes: 2 };
     const id = openingDrillId(ITALIAN_FEN_BEFORE_MOVE_4);
-    const selection = selectRepertoire([italianGame({ id: "a", deviationPly: 6, san: "Ng5" })], [{ id, username: "joueur-test", review }]);
+    const games = [italianGame({ id: "a", deviationPly: 6, san: "Ng5" }), italianGame({ id: "b", deviationPly: 6, san: "Ng5" })];
+    const selection = selectRepertoire(games, [{ id, username: "joueur-test", review }]);
     expect(selection.drills[0]?.review).toEqual(review);
   });
 });
@@ -124,7 +130,8 @@ describe("isEquivalentMove", () => {
 });
 
 function drillFor(id: string, openingName: string, review: Partial<OpeningDrill["review"]> = {}): OpeningDrill {
-  const base = selectRepertoire([italianGame({ id: "a", deviationPly: 6, san: "Ng5" })], []).drills[0];
+  const games = [italianGame({ id: "a", deviationPly: 6, san: "Ng5" }), italianGame({ id: "b", deviationPly: 6, san: "Ng5" })];
+  const base = selectRepertoire(games, []).drills[0];
   if (base === undefined) {
     throw new Error("exercice attendu");
   }

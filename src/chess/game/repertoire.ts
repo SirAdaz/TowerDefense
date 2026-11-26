@@ -8,6 +8,9 @@ import type { AnalysedGame, DrillReview, GameTimeline, MoveReview, OpeningDrill,
 /** L'ouverture s'arrête au 12e coup de chaque camp : au-delà, on juge la partie, plus le répertoire. */
 export const REPERTOIRE_MAX_PLIES = 24;
 
+/** Une ouverture jouée une seule fois n'est pas un répertoire : il en faut au moins deux parties, de la même couleur. */
+export const MIN_ROUTE_GAMES = 2;
+
 /** Une ouverture du joueur, d'une couleur : ses parties, et les positions où il quitte le bon chemin. */
 export interface OpeningRoute {
   readonly openingName: string;
@@ -42,8 +45,9 @@ function routeKey(openingName: string, color: PlayerColor): string {
 }
 
 /**
- * Ouvertures fréquentes, par couleur : les `MAX_OPENINGS` plus jouées avec chaque couleur, comme
- * dans le bilan. Une ouverture inconnue n'a pas de chemin à apprendre : écartée.
+ * Ouvertures fréquentes, par couleur : jouées au moins `MIN_ROUTE_GAMES` fois avec cette couleur,
+ * les `MAX_OPENINGS` plus jouées, comme dans le bilan. Une ouverture inconnue n'a pas de chemin à
+ * apprendre : écartée.
  */
 function frequentRoutes(games: readonly AnalysedGame[]): Map<string, { openingName: string; playerColor: PlayerColor; gameCount: number }> {
   const counts = new Map<string, { openingName: string; playerColor: PlayerColor; gameCount: number }>();
@@ -58,7 +62,7 @@ function frequentRoutes(games: readonly AnalysedGame[]): Map<string, { openingNa
   }
   const kept = (["white", "black"] as const).flatMap((color) =>
     [...counts.entries()]
-      .filter(([, route]) => route.playerColor === color)
+      .filter(([, route]) => route.playerColor === color && route.gameCount >= MIN_ROUTE_GAMES)
       .sort(([, left], [, right]) => right.gameCount - left.gameCount || left.openingName.localeCompare(right.openingName))
       .slice(0, MAX_OPENINGS),
   );
