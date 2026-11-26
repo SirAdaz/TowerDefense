@@ -232,6 +232,85 @@
           </div>
         </section>
 
+        <section id="repertoire" class="panel" aria-labelledby="repertoire-title" hidden>
+          <div class="panel-head">
+            <h2 id="repertoire-title">Votre répertoire</h2>
+            <p id="repertoire-counts" class="counts"></p>
+          </div>
+          <p class="hint">
+            Dans vos ouvertures les plus jouées, la première position où vous quittez le bon chemin : votre premier coup imprécis
+            avant le 13e coup. Jouez le bon coup : celui du moteur, ou un coup qui se vaut.
+          </p>
+
+          <div id="repertoire-prepare" class="prepare" hidden>
+            <p id="repertoire-prepare-text"></p>
+            <div class="actions">
+              <button id="repertoire-prepare-start" type="button" class="btn">Relire ces parties</button>
+            </div>
+            <div id="repertoire-prepare-progress" class="progress" hidden>
+              <label for="repertoire-prepare-bar" id="repertoire-prepare-label">Relecture des parties</label>
+              <progress id="repertoire-prepare-bar" max="1" value="0"></progress>
+              <button id="repertoire-prepare-cancel" type="button" class="btn">Annuler</button>
+            </div>
+            <p id="repertoire-prepare-status" class="status" role="status" aria-live="polite"></p>
+          </div>
+
+          <div id="repertoire-filter" class="filter-note" hidden>
+            <p id="repertoire-filter-text"></p>
+            <button id="repertoire-clear" type="button" class="btn">Revenir à toutes les ouvertures</button>
+          </div>
+
+          <p id="repertoire-empty" class="empty"></p>
+
+          <div id="repertoire-trainer" class="trainer" hidden>
+            <div class="board-wrap">
+              <div id="repertoire-board" class="board" role="group" aria-label="Échiquier de l'ouverture" aria-describedby="repertoire-board-help"></div>
+              <div id="repertoire-explore-panel" class="explore-panel" hidden>
+                <p id="repertoire-explore-mode" class="hint"></p>
+                <div class="explore-nav">
+                  <button id="repertoire-explore-prev" type="button" class="btn"><span aria-hidden="true">←</span> Coup précédent</button>
+                  <button id="repertoire-explore-next" type="button" class="btn">Coup suivant <span aria-hidden="true">→</span></button>
+                </div>
+                <p id="repertoire-explore-step" aria-live="polite"></p>
+                <div class="eval-bar" aria-hidden="true"><div id="repertoire-explore-eval-fill" class="eval-fill"></div></div>
+                <p id="repertoire-explore-eval" aria-live="polite"></p>
+              </div>
+              <p id="repertoire-board-help" class="sr-only">
+                Glissez une pièce, ou choisissez-la puis sa case d'arrivée. Au clavier : flèches pour changer de case, Entrée pour choisir.
+              </p>
+            </div>
+
+            <div class="trainer-side">
+              <p id="repertoire-prompt" class="prompt"></p>
+              <p id="repertoire-origin" class="hint"></p>
+              <p id="repertoire-feedback" class="feedback" role="status" aria-live="polite"></p>
+              <div class="actions">
+                <button id="repertoire-reveal" type="button" class="btn">Voir le bon coup</button>
+                <button id="repertoire-next" type="button" class="btn btn-primary" hidden>Position suivante</button>
+              </div>
+              <div id="repertoire-debrief" class="debrief" hidden>
+                <p id="repertoire-played"></p>
+                <p id="repertoire-schedule" class="hint"></p>
+                <p><a id="repertoire-link" href="https://www.chess.com/" target="_blank" rel="noopener noreferrer">Voir la partie sur chess.com</a></p>
+
+                <div class="explore" role="group" aria-labelledby="repertoire-explore-title">
+                  <h3 id="repertoire-explore-title">Comprendre la position</h3>
+                  <div class="actions">
+                    <button id="repertoire-explore-continue" type="button" class="btn">Continuer à jouer</button>
+                    <button id="repertoire-explore-game" type="button" class="btn">Rejouer votre coup</button>
+                    <button id="repertoire-explore-reset" type="button" class="btn">Revenir à la position</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="repertoire-routes" class="report-block" hidden>
+            <h3 id="repertoire-routes-title">Là où vous sortez de la route</h3>
+            <ul id="repertoire-routes-list" class="theme-list" aria-labelledby="repertoire-routes-title"></ul>
+          </div>
+        </section>
+
         <section id="report" class="panel" aria-labelledby="report-title" hidden>
           <div class="panel-head">
             <h2 id="report-title">Bilan</h2>
