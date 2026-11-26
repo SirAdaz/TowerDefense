@@ -13,7 +13,7 @@ import {
   upcomingMove,
 } from "../game/explore.ts";
 import type { ExploreLine } from "../game/explore.ts";
-import type { Puzzle } from "../game/types.ts";
+import type { PlayerColor } from "../game/types.ts";
 import type { BoardView } from "./board.ts";
 import type { BoardArrow } from "./boardOverlay.ts";
 import { playUci } from "./puzzleText.ts";
@@ -23,15 +23,37 @@ export interface ExploreOptions {
   readonly board: BoardView;
   readonly sound: SoundPlayer;
   readonly engine: ExploreEngine;
+  /** Préfixe des identifiants du panneau (`explore` pour les problèmes, `review-explore` pour la revue). */
+  readonly prefix: string;
+  /** Zone de la page où les flèches du clavier pilotent cette exploration. */
+  readonly root: HTMLElement;
+}
+
+/** Position d'où l'on explore : un problème, ou un coup d'une partie revue. */
+export interface ExploreContext {
+  readonly fen: string;
+  readonly playerColor: PlayerColor;
+  /** Meilleure suite connue (notation anglaise), vide si aucune. */
+  readonly solutionLine: readonly string[];
+  /** Coup joué dans la partie (notation anglaise), `null` si on n'en a pas. */
+  readonly playedSan: string | null;
 }
 
 export interface ExploreView {
-  /** Problème terminé : propose d'explorer, à partir du coup trouvé (ou de la solution). */
-  open(puzzle: Puzzle, solvedUci: string): void;
-  /** Problème suivant : l'exploration s'arrête. */
+  /** Donne la position à explorer ; rien ne bouge tant qu'on ne choisit pas quoi regarder. */
+  open(context: ExploreContext): void;
   close(): void;
-  /** Coup joué sur le plateau ; faux si l'exploration n'est pas en cours (le problème le traite). */
+  isActive(): boolean;
+  /** Coup joué sur le plateau ; faux si l'exploration n'est pas en cours. */
   handleMove(uci: string): boolean;
+  /** Joue `firstUci` depuis la position, puis le moteur répond : on continue la partie. */
+  continueWith(firstUci: string): void;
+  /** Rejoue la meilleure suite connue, coup par coup. */
+  showLine(): void;
+  /** Rejoue le coup de la partie puis la réfutation du moteur. */
+  showGameMove(): void;
+  /** Revient à la position de départ, pour y jouer librement. */
+  reset(): void;
 }
 
 /** Ce qui est exploré : `free` = on joue, le moteur répond ; `line` = suite du moteur ; `game` = coup de la partie. */
@@ -50,8 +72,7 @@ interface Elements {
 interface Explorer {
   readonly options: ExploreOptions;
   readonly elements: Elements;
-  puzzle: Puzzle | null;
-  solvedUci: string;
+  context: ExploreContext | null;
   mode: ExploreMode;
   line: ExploreLine | null;
   /** Numéro de la dernière demande au moteur : une réponse plus ancienne est ignorée. */
@@ -63,21 +84,21 @@ interface Explorer {
 const MODE_TEXTS: Readonly<Record<ExploreMode, string>> = {
   free: "Jouez vos coups : le moteur répond pour l'adversaire. La flèche montre son meilleur coup.",
   line: "Suite prévue par le moteur. Avancez coup par coup (boutons ou flèches du clavier).",
-  game: "Votre coup de la partie, puis la réponse du moteur qui le punit.",
+  game: "Le coup de la partie, puis la réponse du moteur qui le punit.",
 };
 
 /** Longueur gardée de la réfutation : assez pour voir l'idée, sans dérouler toute une partie. */
 const REFUTATION_PLIES = 8;
 
-function collectElements(): Elements {
+function collectElements(prefix: string): Elements {
   return {
-    panel: requireElement("explore-panel", HTMLElement),
-    mode: requireElement("explore-mode", HTMLElement),
-    step: requireElement("explore-step", HTMLElement),
-    evaluation: requireElement("explore-eval", HTMLElement),
-    evalFill: requireElement("explore-eval-fill", HTMLElement),
-    prev: requireElement("explore-prev", HTMLButtonElement),
-    next: requireElement("explore-next", HTMLButtonElement),
+    panel: requireElement(`${prefix}-panel`, HTMLElement),
+    mode: requireElement(`${prefix}-mode`, HTMLElement),
+    step: requireElement(`${prefix}-step`, HTMLElement),
+    evaluation: requireElement(`${prefix}-eval`, HTMLElement),
+    evalFill: requireElement(`${prefix}-eval-fill`, HTMLElement),
+    prev: requireElement(`${prefix}-prev`, HTMLButtonElement),
+    next: requireElement(`${prefix}-next`, HTMLButtonElement),
   };
 }
 
@@ -98,20 +119,16 @@ function describeStep(line: ExploreLine): string {
   return `Coup ${line.index} sur ${line.moves.length} : ${san}.`;
 }
 
-function arrowTone(explorer: Explorer, line: ExploreLine): BoardArrow["tone"] {
-  return explorer.mode === "game" && line.index === 0 ? "played" : "best";
-}
-
-function showLine(explorer: Explorer, line: ExploreLine, puzzle: Puzzle, isInteractive: boolean): void {
+function showLine(explorer: Explorer, line: ExploreLine, context: ExploreContext, isInteractive: boolean): void {
   const upcoming = upcomingMove(line);
-  const arrows: BoardArrow[] = upcoming === null ? [] : [{ uci: upcoming, tone: arrowTone(explorer, line) }];
+  const tone: BoardArrow["tone"] = explorer.mode === "game" && line.index === 0 ? "played" : "best";
   explorer.options.board.show({
     fen: fenAt(line),
-    orientation: puzzle.playerColor,
+    orientation: context.playerColor,
     lastMoveUci: lastMoveOf(line),
     hintSquare: null,
     isInteractive,
-    arrows,
+    arrows: upcoming === null ? [] : [{ uci: upcoming, tone }],
   });
   const { elements } = explorer;
   elements.panel.hidden = false;
@@ -123,13 +140,13 @@ function showLine(explorer: Explorer, line: ExploreLine, puzzle: Puzzle, isInter
 
 /** Montre la position de la suite, puis demande l'évaluation (et la réponse du moteur si `shouldReply`). */
 function render(explorer: Explorer, shouldReply: boolean): void {
-  const { line, puzzle, elements } = explorer;
-  if (line === null || puzzle === null) {
+  const { line, context, elements } = explorer;
+  if (line === null || context === null) {
     return;
   }
   const finished = gameOverText(fenAt(line));
   const isAsking = finished === null && !explorer.isEngineDown;
-  showLine(explorer, line, puzzle, finished === null && !(shouldReply && isAsking));
+  showLine(explorer, line, context, finished === null && !(shouldReply && isAsking));
   explorer.requestId += 1;
   if (!isAsking) {
     setText(elements.evaluation, finished ?? "Moteur indisponible : explorez sans évaluation.");
@@ -140,8 +157,8 @@ function render(explorer: Explorer, shouldReply: boolean): void {
 }
 
 async function evaluate(explorer: Explorer, requestId: number, shouldReply: boolean): Promise<void> {
-  const { line, puzzle, elements, options } = explorer;
-  if (line === null || puzzle === null) {
+  const { line, context, elements, options } = explorer;
+  if (line === null || context === null) {
     return;
   }
   const fen = fenAt(line);
@@ -151,10 +168,10 @@ async function evaluate(explorer: Explorer, requestId: number, shouldReply: bool
       return;
     }
     if (shouldReply) {
-      playReply(explorer, best.moveUci);
+      applyMove(explorer, best.moveUci, false);
       return;
     }
-    const evaluation = describeEvaluation(best.score, sideToMove(fen) === puzzle.playerColor);
+    const evaluation = describeEvaluation(best.score, sideToMove(fen) === context.playerColor);
     setText(elements.evaluation, evaluation.text);
     elements.evalFill.style.width = `${evaluation.winPercent}%`;
     if (upcomingMove(line) === null) {
@@ -168,14 +185,16 @@ async function evaluate(explorer: Explorer, requestId: number, shouldReply: bool
   }
 }
 
-function playReply(explorer: Explorer, uci: string): void {
+/** Joue un coup au bout de la suite, avec son son ; le moteur répond si `shouldReply`. Faux si le coup est illégal. */
+function applyMove(explorer: Explorer, uci: string, shouldReply: boolean): boolean {
   const line = explorer.line === null ? null : playMove(explorer.line, uci);
   if (line === null || explorer.line === null) {
-    return;
+    return false;
   }
   explorer.options.sound.play(playUci(fenAt(explorer.line), uci)?.sound ?? "move");
   explorer.line = line;
-  render(explorer, false);
+  render(explorer, shouldReply);
+  return true;
 }
 
 function start(explorer: Explorer, mode: ExploreMode, line: ExploreLine, shouldReply: boolean): void {
@@ -190,17 +209,17 @@ function start(explorer: Explorer, mode: ExploreMode, line: ExploreLine, shouldR
 }
 
 /** Coup de la partie puis la réfutation du moteur, cherchée dans la position d'après. */
-async function startGameLine(explorer: Explorer, puzzle: Puzzle): Promise<void> {
-  const gameUci = sanLineToUci(puzzle.fen, [puzzle.playedSan])[0];
-  const after = gameUci === undefined ? null : playUci(puzzle.fen, gameUci);
+async function startGameLine(explorer: Explorer, context: ExploreContext): Promise<void> {
+  const gameUci = context.playedSan === null ? undefined : sanLineToUci(context.fen, [context.playedSan])[0];
+  const after = gameUci === undefined ? null : playUci(context.fen, gameUci);
   if (gameUci === undefined || after === null) {
     return;
   }
-  start(explorer, "game", createLine(puzzle.fen, [gameUci]), false);
+  start(explorer, "game", createLine(context.fen, [gameUci]), false);
   try {
     const refutation = await explorer.options.engine.bestLine(after.fen);
-    if (explorer.mode === "game" && explorer.puzzle === puzzle && refutation !== null) {
-      start(explorer, "game", createLine(puzzle.fen, [gameUci, ...refutation.pvUci.slice(0, REFUTATION_PLIES)]), false);
+    if (explorer.mode === "game" && explorer.context === context && refutation !== null) {
+      start(explorer, "game", createLine(context.fen, [gameUci, ...refutation.pvUci.slice(0, REFUTATION_PLIES)]), false);
     }
   } catch {
     setText(explorer.elements.evaluation, "Le moteur n'a pas pu démarrer : la réfutation n'est pas disponible.");
@@ -226,39 +245,25 @@ function step(explorer: Explorer, delta: number): void {
 
 const KEY_STEPS: Readonly<Record<string, number>> = { ArrowLeft: -1, ArrowRight: 1, Home: -999, End: 999 };
 
-/** Flèches du clavier hors du plateau (qui s'en sert pour changer de case) et hors des champs de saisie. */
-function attachKeyboard(explorer: Explorer): void {
+/**
+ * Le clavier pilote la zone où l'on se trouve (problèmes ou revue), hors du plateau (ses flèches
+ * changent de case) et hors des champs de saisie.
+ */
+export function isKeyForZone(event: KeyboardEvent, root: HTMLElement): boolean {
+  const target = event.target instanceof Element ? event.target : null;
+  const isElsewhere = target !== null && target.closest(".board, input, textarea, select, dialog") !== null;
+  const isInZone = target === null || target === document.body || root.contains(target);
+  return !isElsewhere && isInZone && !root.hidden && root.offsetParent !== null;
+}
+
+function attachControls(explorer: Explorer): void {
   document.addEventListener("keydown", (event) => {
     const delta = KEY_STEPS[event.key];
-    const target = event.target instanceof Element ? event.target : null;
-    const isElsewhere = target !== null && target.closest("#board, input, textarea, select, dialog") !== null;
-    if (delta === undefined || explorer.line === null || isElsewhere) {
+    if (delta === undefined || explorer.line === null || !isKeyForZone(event, explorer.options.root)) {
       return;
     }
     event.preventDefault();
     step(explorer, delta);
-  });
-}
-
-function attachButtons(explorer: Explorer): void {
-  const on = (id: string, action: (puzzle: Puzzle) => void) => {
-    requireElement(id, HTMLButtonElement).addEventListener("click", () => {
-      if (explorer.puzzle !== null) {
-        action(explorer.puzzle);
-      }
-    });
-  };
-  on("explore-continue", (puzzle) => {
-    start(explorer, "free", createLine(puzzle.fen, [explorer.solvedUci], 1), true);
-  });
-  on("explore-line", (puzzle) => {
-    start(explorer, "line", createLine(puzzle.fen, sanLineToUci(puzzle.fen, puzzle.solutionLine)), false);
-  });
-  on("explore-game", (puzzle) => {
-    void startGameLine(explorer, puzzle);
-  });
-  on("explore-reset", (puzzle) => {
-    start(explorer, "free", createLine(puzzle.fen), false);
   });
   explorer.elements.prev.addEventListener("click", () => {
     step(explorer, -1);
@@ -268,51 +273,70 @@ function attachButtons(explorer: Explorer): void {
   });
 }
 
+function stop(explorer: Explorer, context: ExploreContext | null): void {
+  explorer.context = context;
+  explorer.line = null;
+  explorer.requestId += 1;
+  explorer.elements.panel.hidden = true;
+}
+
 /**
- * Après un problème : rejouer la position pour comprendre pourquoi le coup est le meilleur. Rien de
- * ce qui est joué ici ne compte pour la révision espacée : le résultat du problème est déjà gardé.
+ * Rejouer une position pour comprendre pourquoi un coup est le meilleur : jouer contre le moteur,
+ * dérouler sa suite, ou voir la réfutation du coup de la partie. Rien ne compte pour la révision.
  */
 export function createExploreView(options: ExploreOptions): ExploreView {
   const explorer: Explorer = {
     options,
-    elements: collectElements(),
-    puzzle: null,
-    solvedUci: "",
+    elements: collectElements(options.prefix),
+    context: null,
     mode: "free",
     line: null,
     requestId: 0,
     isEngineDown: false,
   };
-  attachButtons(explorer);
-  attachKeyboard(explorer);
+  attachControls(explorer);
+  const withContext = (action: (context: ExploreContext) => void) => {
+    if (explorer.context !== null) {
+      action(explorer.context);
+    }
+  };
   return {
-    open: (puzzle, solvedUci) => {
-      explorer.puzzle = puzzle;
-      explorer.solvedUci = solvedUci;
-      explorer.line = null;
-      explorer.requestId += 1;
-      explorer.elements.panel.hidden = true;
+    open: (context) => {
+      stop(explorer, context);
     },
     close: () => {
-      explorer.puzzle = null;
-      explorer.line = null;
-      explorer.requestId += 1;
-      explorer.elements.panel.hidden = true;
+      stop(explorer, null);
     },
+    isActive: () => explorer.line !== null,
     handleMove: (uci) => {
-      if (explorer.line === null || explorer.puzzle === null) {
+      const { line, context } = explorer;
+      if (line === null || context === null) {
         return false;
       }
-      const line = playMove(explorer.line, uci);
-      if (line === null) {
-        return true;
-      }
-      options.sound.play(playUci(fenAt(explorer.line), uci)?.sound ?? "move");
-      const isPlayerMove = sideToMove(fenAt(explorer.line)) === explorer.puzzle.playerColor;
+      const isPlayerMove = sideToMove(fenAt(line)) === context.playerColor;
       explorer.mode = "free";
-      explorer.line = line;
-      render(explorer, isPlayerMove && upcomingMove(line) === null);
+      applyMove(explorer, uci, isPlayerMove);
       return true;
+    },
+    continueWith: (firstUci) => {
+      withContext((context) => {
+        start(explorer, "free", createLine(context.fen, [firstUci], 1), true);
+      });
+    },
+    showLine: () => {
+      withContext((context) => {
+        start(explorer, "line", createLine(context.fen, sanLineToUci(context.fen, context.solutionLine)), false);
+      });
+    },
+    showGameMove: () => {
+      withContext((context) => {
+        void startGameLine(explorer, context);
+      });
+    },
+    reset: () => {
+      withContext((context) => {
+        start(explorer, "free", createLine(context.fen), false);
+      });
     },
   };
 }
