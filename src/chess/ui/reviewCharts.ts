@@ -82,8 +82,16 @@ export function renderTimeChart(svg: SVGSVGElement, review: GameReviewData, inde
       class: barClass(ply),
     });
   });
+  // Zeitnot : la colonne entière est teintée, même quand le coup lui-même a été joué en un éclair.
+  const zones = review.plies
+    .filter((ply) => ply.isZeitnot)
+    .map((ply) => {
+      const x = (xOf(ply.ply + 1, plyCount) - slot).toFixed(1);
+      return svgElement("rect", { x, y: "0", width: slot.toFixed(1), height: String(TIME_HEIGHT), class: "time-zone" });
+    });
   svg.setAttribute("viewBox", `0 0 ${WIDTH} ${TIME_HEIGHT}`);
   svg.replaceChildren(
+    ...zones,
     svgElement("line", { x1: "0", x2: String(WIDTH), y1: String(half), y2: String(half), class: "chart-mid" }),
     ...bars,
     cursor(index, plyCount, TIME_HEIGHT),

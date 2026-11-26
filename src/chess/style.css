@@ -1150,6 +1150,10 @@ progress::-moz-progress-bar {
   fill: #ff6b57;
 }
 
+.time-zone {
+  fill: rgb(255 107 87 / 28%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .review-evalbar-fill {
     transition: none;
